@@ -30,7 +30,7 @@ export type Transaction = {
   category: string;
   subCategory?: string;
   wallet: string;
-  description: string;
+  description?: string;
   currency: string;
   attachments?: File[];
 };

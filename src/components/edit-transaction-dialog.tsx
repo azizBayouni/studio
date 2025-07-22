@@ -75,7 +75,7 @@ export function EditTransactionDialog({
     if (transaction) {
       setType(transaction.type);
       setAmount(transaction.amount);
-      setDescription(transaction.description);
+      setDescription(transaction.description || '');
       setCategory(transaction.category);
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
@@ -83,6 +83,12 @@ export function EditTransactionDialog({
       setTransactionCurrency(transaction.currency);
     }
   }, [transaction]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTransactionCurrency(getDefaultCurrency());
+    }
+  }, [isOpen, getDefaultCurrency()]);
   
   if (!transaction) return null;
 
@@ -138,7 +144,7 @@ export function EditTransactionDialog({
         return;
     }
     
-    if (!amount || !description || !category || !wallet || !date) {
+    if (!amount || !category || !wallet || !date) {
         toast({
             title: "Missing Fields",
             description: "Please fill out all required fields.",
@@ -279,8 +285,8 @@ export function EditTransactionDialog({
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>

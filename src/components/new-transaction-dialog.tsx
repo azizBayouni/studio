@@ -73,7 +73,7 @@ export function NewTransactionDialog({
     if (isOpen) {
       resetForm();
     }
-  }, [isOpen]);
+  }, [isOpen, getDefaultCurrency()]);
 
   const handleCurrencyChange = async (newCurrency: string) => {
     const originalAmount = Number(amount);
@@ -126,7 +126,7 @@ export function NewTransactionDialog({
         return;
     }
 
-    if (!amount || !description || !category || !wallet || !date) {
+    if (!amount || !category || !wallet || !date) {
         toast({
             title: "Missing Fields",
             description: "Please fill out all required fields.",
@@ -243,8 +243,8 @@ export function NewTransactionDialog({
                 </div>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} />
             </div>
             <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
