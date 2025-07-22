@@ -262,4 +262,5 @@ export default function TransactionsPage() {
         transaction={selectedTransaction}
       />
     </>
-    
+  );
+}
