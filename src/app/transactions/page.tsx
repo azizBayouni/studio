@@ -211,7 +211,7 @@ export default function TransactionsPage() {
                                 Custom Range...
                             </DropdownMenuItem>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0" align="end">
                             <Calendar
                             initialFocus
                             mode="range"
