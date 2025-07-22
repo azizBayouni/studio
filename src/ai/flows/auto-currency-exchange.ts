@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -30,52 +31,69 @@ export async function autoCurrencyExchange(input: AutoCurrencyExchangeInput): Pr
 const getExchangeRate = ai.defineTool(
   {
     name: 'getExchangeRate',
-    description: 'Retrieves the current exchange rate between two currencies.',
+    description: 'Retrieves the current exchange rate between two currencies using a live API.',
     inputSchema: z.object({
       fromCurrency: z.string().describe('The currency to convert from (e.g., USD).'),
       toCurrency: z.string().describe('The currency to convert to (e.g., EUR).'),
     }),
     outputSchema: z.number().describe('The current exchange rate between the two currencies.'),
   },
-  async input => {
-    // This is a placeholder implementation. In a real application, this would
-    // call an external API or database to get the current exchange rate.
-    // For demonstration purposes, we'll use a fixed set of more realistic rates.
-    console.log(`Getting exchange rate from ${input.fromCurrency} to ${input.toCurrency}`);
+  async (input) => {
+    console.log(`Getting live exchange rate from ${input.fromCurrency} to ${input.toCurrency}`);
     
-    const rates: {[key: string]: {[key: string]: number}} = {
-      USD: { EUR: 0.93, JPY: 157.5, GBP: 0.79, AUD: 1.5, CAD: 1.37, CHF: 0.9, CNY: 7.25, USD: 1 },
-      EUR: { USD: 1.08, JPY: 169.5, GBP: 0.85, AUD: 1.62, CAD: 1.47, CHF: 0.97, CNY: 7.8, EUR: 1 },
-      GBP: { USD: 1.27, JPY: 199.5, EUR: 1.18, AUD: 1.9, CAD: 1.74, CHF: 1.14, CNY: 9.2, GBP: 1 },
-      JPY: { USD: 0.0063, EUR: 0.0059, GBP: 0.0050, AUD: 0.0095, CAD: 0.0087, CHF: 0.0057, CNY: 0.046, JPY: 1 },
-      AUD: { USD: 0.67, EUR: 0.62, GBP: 0.53, JPY: 105.0, CAD: 0.91, CHF: 0.60, CNY: 4.83, AUD: 1 },
-      CAD: { USD: 0.73, EUR: 0.68, GBP: 0.57, JPY: 115.0, AUD: 1.10, CHF: 0.66, CNY: 5.30, CAD: 1 },
-      CHF: { USD: 1.11, EUR: 1.03, GBP: 0.88, JPY: 175.0, AUD: 1.67, CAD: 1.52, CNY: 8.05, CHF: 1 },
-      CNY: { USD: 0.14, EUR: 0.13, GBP: 0.11, JPY: 21.7, AUD: 0.21, CAD: 0.19, CHF: 0.12, CNY: 1 },
-    };
-
-    const fromRate = rates[input.fromCurrency];
-    if (fromRate && fromRate[input.toCurrency]) {
-      return fromRate[input.toCurrency];
-    }
-    
-    // Fallback for inverse conversion if direct rate isn't defined
-    const toRate = rates[input.toCurrency];
-    if (toRate && toRate[input.fromCurrency]) {
-      return 1 / toRate[input.fromCurrency];
-    }
-    
-    // Default rate if no specific path is found
     if (input.fromCurrency === input.toCurrency) {
-        return 1;
-    } else {
-        // Fallback for less common currencies, simulating a generic rate against USD
-        if (input.toCurrency === 'USD') return 0.1;
-        if (input.fromCurrency === 'USD') return 10;
+      return 1;
+    }
+
+    const apiKey = process.env.EXCHANGERATE_API_KEY;
+    if (!apiKey) {
+      console.error("ExchangeRate API key not found in environment variables.");
+      // Fallback to a simulated rate if API key is missing
+      return 1.05; 
+    }
+
+    const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${input.fromCurrency}`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`API request failed with status: ${response.status}`);
+        // Fallback to a simulated rate on API error
         return 1.05;
+      }
+
+      const data = await response.json();
+      
+      if (data.result === 'error') {
+        console.error(`ExchangeRate API error: ${data['error-type']}`);
+        return 1.05;
+      }
+      
+      const rate = data.conversion_rates?.[input.toCurrency];
+
+      if (rate) {
+        return rate;
+      } else {
+        console.warn(`Rate for ${input.toCurrency} not found. Falling back.`);
+        // Fallback for currencies not in the main list
+        const inverseUrl = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${input.toCurrency}`;
+        const inverseResponse = await fetch(inverseUrl);
+         if (!inverseResponse.ok) return 1.05;
+        const inverseData = await inverseResponse.json();
+        const inverseRate = inverseData.conversion_rates?.[input.fromCurrency];
+        if (inverseRate) return 1 / inverseRate;
+      }
+      
+      return 1.05; // Final fallback
+
+    } catch (error) {
+      console.error("Failed to fetch exchange rate:", error);
+      // Fallback to a simulated rate on network or other errors
+      return 1.05;
     }
   }
 );
+
 
 // This prompt is no longer used by the flow but is kept for potential future use or reference.
 const prompt = ai.definePrompt({
