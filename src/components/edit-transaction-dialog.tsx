@@ -42,12 +42,14 @@ import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { categories, wallets, currencies } from '@/lib/data';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
 import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 import { getDefaultCurrency } from '@/services/settings-service';
+import { getTravelMode } from '@/services/travel-mode-service';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -62,6 +64,7 @@ export function EditTransactionDialog({
 }: EditTransactionDialogProps) {
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [amount, setAmount] = useState<number | ''>('');
+  const [originalAmount, setOriginalAmount] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [wallet, setWallet] = useState('');
@@ -69,80 +72,95 @@ export function EditTransactionDialog({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [transactionCurrency, setTransactionCurrency] = useState(getDefaultCurrency());
   const [isConverting, setIsConverting] = useState(false);
+  const [isTravelMode, setIsTravelMode] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState('');
   const { toast } = useToast();
 
-  useEffect(() => {
+  const handleAmountChange = async (value: string) => {
+    const numericValue = value === '' ? '' : parseFloat(value);
+    setOriginalAmount(numericValue);
+    if (isTravelMode && numericValue) {
+      await convertAmount(numericValue, transactionCurrency, defaultCurrency);
+    } else {
+      setAmount(numericValue);
+    }
+  };
+
+  const convertAmount = async (
+    amountToConvert: number,
+    from: string,
+    to: string
+  ) => {
+    if (!amountToConvert || !to || from === to) {
+      setAmount(amountToConvert);
+      return;
+    }
+    setIsConverting(true);
+    try {
+      const result = await autoCurrencyExchange({
+        amount: amountToConvert,
+        fromCurrency: from,
+        toCurrency: to,
+      });
+      setAmount(result.convertedAmount);
+      toast({
+        title: 'Amount Converted',
+        description: `${amountToConvert.toFixed(
+          2
+        )} ${from} is approximately ${result.convertedAmount.toFixed(2)} ${to}.`,
+      });
+    } catch (error) {
+      console.error('Currency conversion failed:', error);
+      toast({
+        title: 'Conversion Failed',
+        description: 'Could not convert currency. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const resetAndInitialize = useCallback(() => {
+    const currentDefaultCurrency = getDefaultCurrency();
+    setDefaultCurrency(currentDefaultCurrency);
+    const travelMode = getTravelMode();
+    setIsTravelMode(travelMode.isActive);
+
     if (transaction) {
       setType(transaction.type);
       setAmount(transaction.amount);
+      setOriginalAmount(transaction.amount);
       setDescription(transaction.description || '');
       setCategory(transaction.category);
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
-      setTransactionCurrency(transaction.currency);
+      
+      if (travelMode.isActive && travelMode.currency) {
+          setTransactionCurrency(travelMode.currency);
+          // If in travel mode, we assume the original amount was in default currency,
+          // and we show what it would be in travel currency.
+          // This is a simplification; a real app might store original amount/currency.
+      } else {
+          setTransactionCurrency(transaction.currency);
+      }
+
     }
-  }, [transaction]);
+  }, [transaction, isOpen]);
+
 
   useEffect(() => {
     if (isOpen) {
-      setTransactionCurrency(getDefaultCurrency());
+      resetAndInitialize();
     }
-  }, [isOpen, getDefaultCurrency()]);
+  }, [isOpen, resetAndInitialize]);
+
   
   if (!transaction) return null;
 
-  const handleCurrencyChange = async (newCurrency: string) => {
-    const originalAmount = Number(amount);
-    const fromCurrency = newCurrency;
-    const toCurrency = getDefaultCurrency();
-
-    if (!originalAmount || !toCurrency || fromCurrency === toCurrency) {
-      setTransactionCurrency(fromCurrency);
-      return;
-    }
-
-    setIsConverting(true);
-    try {
-        const result = await autoCurrencyExchange({
-            amount: originalAmount,
-            fromCurrency: fromCurrency,
-            toCurrency: toCurrency,
-        });
-
-        setAmount(result.convertedAmount);
-        setTransactionCurrency(toCurrency);
-
-        toast({
-            title: "Amount Converted",
-            description: `${originalAmount.toFixed(2)} ${fromCurrency} is approximately ${result.convertedAmount.toFixed(2)} ${toCurrency}.`,
-        });
-
-    } catch (error) {
-        console.error("Currency conversion failed:", error);
-        setTransactionCurrency(fromCurrency); // Revert on failure
-        toast({
-            title: "Conversion Failed",
-            description: "Could not convert currency. Please try again.",
-            variant: "destructive",
-        });
-    } finally {
-        setIsConverting(false);
-    }
-  }
-
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const defaultCurrency = getDefaultCurrency();
-    if (transactionCurrency !== defaultCurrency) {
-        toast({
-            title: "Currency Mismatch",
-            description: `Please convert the amount to the default currency (${defaultCurrency}) before saving.`,
-            variant: "destructive",
-        });
-        return;
-    }
     
     if (!amount || !category || !wallet || !date) {
         toast({
@@ -242,6 +260,15 @@ export function EditTransactionDialog({
             </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
+            {isTravelMode && (
+              <Alert>
+                <AlertTitle>Travel Mode Active</AlertTitle>
+                <AlertDescription>
+                  Amounts are entered in {transactionCurrency} and will be saved in{' '}
+                  {defaultCurrency}.
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
                 <Label>Type</Label>
                 <RadioGroup value={type} onValueChange={(v) => setType(v as 'income' | 'expense')} className="flex gap-4">
@@ -271,18 +298,50 @@ export function EditTransactionDialog({
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                 <div className="flex items-center gap-2">
-                    <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required className="flex-1" disabled={isConverting} />
-                    <Select value={transactionCurrency} onValueChange={handleCurrencyChange} disabled={isConverting}>
-                        <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
+              <Label htmlFor="amount">Amount</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={isTravelMode ? originalAmount : amount}
+                  onChange={(e) =>
+                    isTravelMode
+                      ? handleAmountChange(e.target.value)
+                      : setAmount(
+                          e.target.value === '' ? '' : parseFloat(e.target.value)
+                        )
+                  }
+                  required
+                  className="flex-1"
+                  disabled={isConverting}
+                />
+                <Select
+                  value={transactionCurrency}
+                  onValueChange={setTransactionCurrency}
+                  disabled={!isTravelMode}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {isTravelMode && (
+                <p className="text-sm text-muted-foreground">
+                  Will be saved as ≈{' '}
+                  {Number(amount).toLocaleString(undefined, {
+                    style: 'currency',
+                    currency: defaultCurrency,
+                  })}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
                 <Label htmlFor="description">Description (Optional)</Label>

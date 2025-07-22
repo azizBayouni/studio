@@ -21,6 +21,7 @@ import { useState, useEffect } from 'react';
 import { TravelModeDialog } from './travel-mode-dialog';
 import { getUser } from '@/services/user-service';
 import type { User as UserType } from '@/lib/data';
+import { getTravelMode, disconnectTravelMode } from '@/services/travel-mode-service';
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -34,12 +35,20 @@ export function AppHeader() {
 
   useEffect(() => {
     fetchUser();
+    const travelModeState = getTravelMode();
+    setIsTravelMode(travelModeState.isActive);
 
-    // Listen for a custom event to re-fetch user data
+    const handleTravelModeChange = () => {
+      const updatedState = getTravelMode();
+      setIsTravelMode(updatedState.isActive);
+    };
+    
     window.addEventListener('profileUpdated', fetchUser);
+    window.addEventListener('travelModeChanged', handleTravelModeChange);
 
     return () => {
       window.removeEventListener('profileUpdated', fetchUser);
+      window.removeEventListener('travelModeChanged', handleTravelModeChange);
     };
   }, []);
 
@@ -50,9 +59,10 @@ export function AppHeader() {
   };
 
   const handleTravelModeChange = (checked: boolean) => {
-    setIsTravelMode(checked);
     if (checked) {
       setIsDialogOpen(true);
+    } else {
+      disconnectTravelMode();
     }
   };
 
@@ -124,7 +134,6 @@ export function AppHeader() {
       <TravelModeDialog 
         isOpen={isDialogOpen} 
         onOpenChange={setIsDialogOpen} 
-        onDisconnect={() => setIsTravelMode(false)} 
       />
     </header>
   );

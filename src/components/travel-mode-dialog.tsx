@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -27,32 +28,64 @@ import { format } from 'date-fns';
 import { currencies, events } from '@/lib/data';
 import type { DateRange } from "react-day-picker"
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { setTravelMode, disconnectTravelMode } from '@/services/travel-mode-service';
 
 interface TravelModeDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onDisconnect: () => void;
 }
 
 export function TravelModeDialog({
   isOpen,
   onOpenChange,
-  onDisconnect,
 }: TravelModeDialogProps) {
     const [date, setDate] = useState<DateRange | undefined>()
+    const [selectedEvent, setSelectedEvent] = useState<string>('');
+    const [selectedCurrency, setSelectedCurrency] = useState<string>('');
+    const { toast } = useToast();
 
     const handleConnect = () => {
-        // Logic to activate travel mode with selected settings
+        if (!selectedEvent || !selectedCurrency) {
+            toast({
+                title: "Missing Information",
+                description: "Please select an event and a currency.",
+                variant: "destructive"
+            });
+            return;
+        }
+        setTravelMode({
+            isActive: true,
+            currency: selectedCurrency,
+            eventId: selectedEvent,
+            duration: date
+        });
+        toast({
+            title: "Travel Mode Activated",
+            description: `Ready to track expenses for your trip in ${selectedCurrency}.`,
+        });
         onOpenChange(false);
     }
     
     const handleDisconnect = () => {
-        onDisconnect();
+        disconnectTravelMode();
+        toast({
+            title: "Travel Mode Deactivated",
+        });
         onOpenChange(false);
     }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!open) {
+            // If the user closes the dialog without connecting, ensure the switch is off
+            const travelModeState = getTravelMode();
+            if (!travelModeState.isActive) {
+                 window.dispatchEvent(new Event('travelModeChanged'));
+            }
+        }
+        onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Activate Travel Mode</DialogTitle>
@@ -66,7 +99,7 @@ export function TravelModeDialog({
             <Label htmlFor="event" className="text-right">
               Event
             </Label>
-            <Select>
+            <Select onValueChange={setSelectedEvent}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select an event" />
               </SelectTrigger>
@@ -81,7 +114,7 @@ export function TravelModeDialog({
             <Label htmlFor="currency" className="text-right">
               Currency
             </Label>
-            <Select>
+            <Select onValueChange={setSelectedCurrency}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select travel currency" />
               </SelectTrigger>
