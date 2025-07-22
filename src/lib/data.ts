@@ -95,9 +95,16 @@ export const debts: Debt[] = [
 ];
 
 export const currencies = [
-  'USD', 'EUR', 'JPY', 'GBP', 'AUD', 'CAD', 'CHF', 'CNY', 'HKD', 'NZD', 
-  'SEK', 'KRW', 'SGD', 'NOK', 'MXN', 'INR', 'RUB', 'ZAR', 'TRY', 'BRL',
-  'AED', 'SAR', 'QAR', 'KWD', 'BHD', 'OMR'
+  "USD", "EUR", "JPY", "GBP", "CNY", "AUD", "CAD", "CHF", "HKD", "SGD", 
+  "KRW", "INR", "RUB", "BRL", "MXN", "ZAR", "NZD", "SEK", "NOK", "DKK", 
+  "TRY", "THB", "MYR", "IDR", "PHP", "SAR", "AED", "ILS", "ARS", "CLP", 
+  "COP", "EGP", "NGN", "VND", "PLN", "CZK", "HUF", "RON", "BGN", "HRK", 
+  "ISK", "UAH", "KWD", "QAR", "OMR", "BHD", "JOD", "TWD", "TND", "MAD", 
+  "DZD", "PEN", "VES", "GTQ", "CRC", "HNL", "NIO", "PAB", "BOB", "UYU", 
+  "PYG", "JMD", "TTD", "BBD", "BSD", "AWG", "ANG", "KYD", "XCD", "FJD", 
+  "PGK", "WST", "TOP", "VUV", "SBD", "MOP", "BND", "MMK", "KHR", "LAK", 
+  "MNT", "KZT", "UZS", "TJS", "TMT", "AZN", "GEL", "AMD", "BYN", "KGS", 
+  "MZN", "ZMW", "MWK", "GHS", "ETB", "KES", "UGX", "RWF", "BWP", "NAD"
 ];
 
 export const events = [
