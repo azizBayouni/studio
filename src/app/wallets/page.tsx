@@ -52,7 +52,7 @@ export default function WalletsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>Set as Default</DropdownMenuItem>
+                            {/* <DropdownMenuItem>Set as Default</DropdownMenuItem> */}
                             <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

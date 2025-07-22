@@ -47,6 +47,7 @@ import { updateTransaction, deleteTransaction } from '@/services/transaction-ser
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
 import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
+import { getDefaultCurrency } from '@/services/settings-service';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -66,12 +67,9 @@ export function EditTransactionDialog({
   const [wallet, setWallet] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [transactionCurrency, setTransactionCurrency] = useState<string | undefined>();
+  const [transactionCurrency, setTransactionCurrency] = useState(getDefaultCurrency());
   const [isConverting, setIsConverting] = useState(false);
   const { toast } = useToast();
-
-  const selectedWallet = wallets.find(w => w.name === wallet);
-  const selectedWalletCurrency = selectedWallet?.currency;
 
   useEffect(() => {
     if (transaction) {
@@ -82,23 +80,16 @@ export function EditTransactionDialog({
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
-      const initialWallet = wallets.find(w => w.name === transaction.wallet);
-      setTransactionCurrency(initialWallet?.currency);
+      setTransactionCurrency(transaction.currency);
     }
   }, [transaction]);
-
-  useEffect(() => {
-    if (selectedWalletCurrency) {
-      setTransactionCurrency(selectedWalletCurrency);
-    }
-  }, [wallet, selectedWalletCurrency]);
   
   if (!transaction) return null;
 
   const handleCurrencyChange = async (newCurrency: string) => {
     const originalAmount = Number(amount);
     const fromCurrency = newCurrency;
-    const toCurrency = selectedWalletCurrency;
+    const toCurrency = getDefaultCurrency();
 
     if (!originalAmount || !toCurrency || fromCurrency === toCurrency) {
       setTransactionCurrency(fromCurrency);
@@ -123,7 +114,7 @@ export function EditTransactionDialog({
 
     } catch (error) {
         console.error("Currency conversion failed:", error);
-        setTransactionCurrency(toCurrency);
+        setTransactionCurrency(fromCurrency); // Revert on failure
         toast({
             title: "Conversion Failed",
             description: "Could not convert currency. Please try again.",
@@ -137,7 +128,17 @@ export function EditTransactionDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description || !category || !wallet || !date || !selectedWalletCurrency) {
+    const defaultCurrency = getDefaultCurrency();
+    if (transactionCurrency !== defaultCurrency) {
+        toast({
+            title: "Currency Mismatch",
+            description: `Please convert the amount to the default currency (${defaultCurrency}) before saving.`,
+            variant: "destructive",
+        });
+        return;
+    }
+    
+    if (!amount || !description || !category || !wallet || !date) {
         toast({
             title: "Missing Fields",
             description: "Please fill out all required fields.",
@@ -154,7 +155,7 @@ export function EditTransactionDialog({
         category,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
-        currency: selectedWalletCurrency,
+        currency: defaultCurrency,
         attachments,
     };
 
@@ -257,7 +258,7 @@ export function EditTransactionDialog({
                 <SelectContent>
                     {wallets.map((wallet) => (
                     <SelectItem key={wallet.id} value={wallet.name}>
-                        {wallet.name}
+                        {wallet.name} ({wallet.currency})
                     </SelectItem>
                     ))}
                 </SelectContent>
@@ -267,7 +268,7 @@ export function EditTransactionDialog({
                 <Label htmlFor="amount">Amount</Label>
                  <div className="flex items-center gap-2">
                     <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required className="flex-1" disabled={isConverting} />
-                    <Select value={transactionCurrency} onValueChange={handleCurrencyChange} disabled={!wallet || isConverting}>
+                    <Select value={transactionCurrency} onValueChange={handleCurrencyChange} disabled={isConverting}>
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Currency" />
                         </SelectTrigger>
