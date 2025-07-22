@@ -122,6 +122,7 @@ export function NewTransactionDialog({
         description: 'Could not convert currency. Please try again.',
         variant: 'destructive',
       });
+       setAmount(amountToConvert); // Fallback to original amount on error
     } finally {
       setIsConverting(false);
     }
@@ -136,16 +137,18 @@ export function NewTransactionDialog({
   const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
     setOriginalAmount(numericValue);
+    // If not in travel mode, the display amount is the same as the entered amount
     if (!isTravelMode) {
       setAmount(numericValue);
     }
   };
 
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!amount || !category || !wallet || !date) {
+    const finalAmount = isTravelMode ? amount : originalAmount;
+
+    if (!finalAmount || !category || !wallet || !date) {
         toast({
             title: "Missing Fields",
             description: "Please fill out all required fields.",
@@ -155,7 +158,7 @@ export function NewTransactionDialog({
     }
 
     const newTransaction: Omit<Transaction, 'id'> = {
-        amount: Number(amount),
+        amount: Number(finalAmount),
         type,
         description,
         category,
@@ -268,7 +271,7 @@ export function NewTransactionDialog({
                         </SelectContent>
                     </Select>
                 </div>
-                 {isTravelMode && (
+                 {isTravelMode && amount && (
                     <p className="text-sm text-muted-foreground">
                         Will be saved as ≈ {Number(amount).toLocaleString(undefined, { style: 'currency', currency: defaultCurrency })}
                     </p>
@@ -350,3 +353,5 @@ export function NewTransactionDialog({
     </Dialog>
   );
 }
+
+    
