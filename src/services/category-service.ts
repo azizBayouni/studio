@@ -10,3 +10,8 @@ export function updateCategory(updatedCategory: Category): void {
     console.error(`Category with id ${updatedCategory.id} not found.`);
   }
 }
+
+export function addCategory(newCategory: Omit<Category, 'id'>): void {
+    const newId = (Math.max(...categories.map(c => parseInt(c.id))) + 1).toString();
+    categories.push({ ...newCategory, id: newId });
+}

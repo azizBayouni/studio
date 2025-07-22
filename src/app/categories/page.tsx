@@ -22,9 +22,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Category } from '@/lib/data';
 import { EditCategoryDialog } from '@/components/edit-category-dialog';
+import { AddCategoryDialog } from '@/components/add-category-dialog';
 
 export default function CategoriesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
   const getCategoryName = (id: string | null): string => {
@@ -49,7 +51,7 @@ export default function CategoriesPage() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-              <Button>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Category
               </Button>
           </div>
@@ -114,6 +116,10 @@ export default function CategoriesPage() {
         isOpen={isEditDialogOpen} 
         onOpenChange={setIsEditDialogOpen} 
         category={selectedCategory}
+      />
+      <AddCategoryDialog
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
       />
     </>
   );
