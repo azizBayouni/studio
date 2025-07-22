@@ -1,5 +1,6 @@
 
-import { transactions, type Transaction } from '@/lib/data';
+import { transactions, wallets, type Transaction, type Wallet } from '@/lib/data';
+import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 
 export function addTransaction(newTransaction: Omit<Transaction, 'id'>): void {
     const newId = 't' + (Math.max(...transactions.map(t => parseInt(t.id.substring(1)))) + 1).toString();
@@ -21,5 +22,31 @@ export function deleteTransaction(transactionId: string): void {
         transactions.splice(index, 1);
     } else {
         console.error(`Transaction with id ${transactionId} not found.`);
+    }
+}
+
+export async function convertAllTransactions(fromCurrency: string, toCurrency: string): Promise<void> {
+    for (const transaction of transactions) {
+        const { convertedAmount } = await autoCurrencyExchange({
+            amount: transaction.amount,
+            fromCurrency: fromCurrency,
+            toCurrency: toCurrency,
+        });
+        transaction.amount = convertedAmount;
+        transaction.currency = toCurrency;
+    }
+}
+
+export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
+    for (const wallet of wallets) {
+        if (wallet.currency === fromCurrency) {
+            const { convertedAmount } = await autoCurrencyExchange({
+                amount: wallet.balance,
+                fromCurrency: fromCurrency,
+                toCurrency: toCurrency,
+            });
+            wallet.balance = convertedAmount;
+            wallet.currency = toCurrency;
+        }
     }
 }
