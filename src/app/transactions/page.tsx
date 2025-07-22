@@ -64,6 +64,8 @@ export default function TransactionsPage() {
   const [walletFilter, setWalletFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [selectedPeriod, setSelectedPeriod] = useState<string>('all-time');
+  const [isCustomRangePopoverOpen, setIsCustomRangePopoverOpen] = useState(false);
+
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -139,6 +141,9 @@ export default function TransactionsPage() {
   const handleCustomDateChange = (range: DateRange | undefined) => {
     setDateRange(range);
     setSelectedPeriod('custom');
+    if (range?.from && range?.to) {
+        setIsCustomRangePopoverOpen(false);
+    }
   }
 
   return (
@@ -200,9 +205,9 @@ export default function TransactionsPage() {
                     <DropdownMenuItem onClick={() => setPeriod('this-year')}>This Year</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setPeriod('last-year')}>Last Year</DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <Popover>
+                     <Popover open={isCustomRangePopoverOpen} onOpenChange={setIsCustomRangePopoverOpen}>
                         <PopoverTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                 Custom Range...
                             </DropdownMenuItem>
                         </PopoverTrigger>
@@ -234,7 +239,7 @@ export default function TransactionsPage() {
               <TableBody>
                 {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
-                    <TableCell>{transaction.date}</TableCell>
+                    <TableCell>{format(parseISO(transaction.date), 'dd MMM yyyy')}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       {transaction.description}
                       {transaction.attachments && transaction.attachments.length > 0 && (
