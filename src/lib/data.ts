@@ -85,7 +85,7 @@ export const wallets: Wallet[] = [
   { id: 'w1', name: 'Main Wallet', currency: 'USD', balance: 3450.75 },
   { id: 'w2', name: 'Credit Card', currency: 'USD', balance: -1240.20 },
   { id: 'w3', name: 'Savings', currency: 'USD', balance: 15800.00 },
-  { id: 'w4', name: 'Travel Fund (EUR)', currency: 'EUR', balance: 2500.00 },
+  { id: 'w4', name: 'PayPal', currency: 'USD', balance: 2500.00 },
 ];
 
 export const debts: Debt[] = [

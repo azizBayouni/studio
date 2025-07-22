@@ -42,10 +42,10 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
 
 export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
     for (const wallet of wallets) {
-        if (wallet.currency === fromCurrency) {
+        if (wallet.currency !== toCurrency) {
             const { convertedAmount } = await autoCurrencyExchange({
                 amount: wallet.balance,
-                fromCurrency: fromCurrency,
+                fromCurrency: wallet.currency, // Convert from its own current currency
                 toCurrency: toCurrency,
             });
             wallet.balance = convertedAmount;
