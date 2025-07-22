@@ -170,6 +170,8 @@ export function EditTransactionDialog({
     URL.revokeObjectURL(url);
   }
 
+  const selectedWalletCurrency = wallets.find(w => w.name === wallet)?.currency;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -195,23 +197,6 @@ export function EditTransactionDialog({
                 </RadioGroup>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="amount">Amount</Label>
-                <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required/>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>{renderCategoryOptions()}</SelectContent>
-                </Select>
-            </div>
-            <div className="space-y-2">
                 <Label htmlFor="wallet">Wallet</Label>
                 <Select value={wallet} onValueChange={setWallet}>
                 <SelectTrigger>
@@ -224,6 +209,26 @@ export function EditTransactionDialog({
                     </SelectItem>
                     ))}
                 </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="amount">Amount</Label>
+                 <div className="flex items-center gap-2">
+                    <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required className="flex-1"/>
+                    <span className="flex items-center justify-center w-16 h-10 text-sm text-muted-foreground bg-muted rounded-md">{selectedWalletCurrency || '...'}</span>
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input id="description" placeholder="e.g. Lunch with friends" value={description} onChange={(e) => setDescription(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>{renderCategoryOptions()}</SelectContent>
                 </Select>
             </div>
             <div className="space-y-2">
