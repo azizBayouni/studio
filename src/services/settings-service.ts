@@ -1,16 +1,19 @@
 
 'use client';
 
-// For now, we'll store the setting in memory.
-// In a real app, you might use localStorage or a server-side solution.
-let defaultCurrency = 'USD'; 
+const CURRENCY_STORAGE_KEY = 'expensewise-default-currency';
 
+// We use localStorage to persist the setting across browser sessions.
 export function getDefaultCurrency(): string {
-  // In a real app, you might read from localStorage here.
-  return defaultCurrency;
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(CURRENCY_STORAGE_KEY) || 'USD';
+  }
+  // Fallback for server-side rendering
+  return 'USD';
 }
 
 export function setDefaultCurrency(currency: string): void {
-  // In a real app, you might write to localStorage here.
-  defaultCurrency = currency;
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+  }
 }
