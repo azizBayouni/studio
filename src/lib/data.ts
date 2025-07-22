@@ -1,4 +1,5 @@
 
+
 import {
   Utensils,
   ShoppingBag,
@@ -62,6 +63,8 @@ export type Debt = {
 export type Event = {
   id: string;
   name: string;
+  icon: string;
+  status: 'active' | 'inactive';
 };
 
 export const user: User = {
@@ -127,13 +130,13 @@ export const currencies = [
 ];
 
 export const events: Event[] = [
-  { id: 'e1', name: 'Europe Trip 2024' },
-  { id: 'e2', name: 'Client Project in Dubai' },
-  { id: 'e3', name: 'Family Vacation Japan' },
+  { id: 'e1', name: 'Europe Trip 2024', icon: '✈️', status: 'active' },
+  { id: 'e2', name: 'Client Project in Dubai', icon: '💼', status: 'active' },
+  { id: 'e3', name: 'Family Vacation Japan', icon: '🗾', status: 'inactive' },
 ];
 
 export const emojiIcons = [
   '🍔', '🧾', '🛒', '🛍️', '👕', '💻', '🏠', '🏢', '🚌', '⛽', 
   '📈', '🏛️', '🐷', '🎁', '🎓', '✈️', '🏝️', '🏥', '💊', '🎉',
-  '💡', '💰', '💸', '💳', '🤔', '🏦', '🅿️'
+  '💡', '💰', '💸', '💳', '🤔', '🏦', '🅿️', '💼', '🗾'
 ];
