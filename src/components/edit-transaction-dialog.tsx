@@ -70,7 +70,8 @@ export function EditTransactionDialog({
   const [isConverting, setIsConverting] = useState(false);
   const { toast } = useToast();
 
-  const selectedWalletCurrency = wallets.find(w => w.name === wallet)?.currency;
+  const selectedWallet = wallets.find(w => w.name === wallet);
+  const selectedWalletCurrency = selectedWallet?.currency;
 
   useEffect(() => {
     if (transaction) {
@@ -88,23 +89,37 @@ export function EditTransactionDialog({
   if (!transaction) return null;
 
   const handleCurrencyChange = async (newCurrency: string) => {
-    const originalCurrency = selectedWalletCurrency;
-    if (!originalCurrency || originalCurrency === newCurrency || !amount) {
-        setTransactionCurrency(newCurrency);
+    const originalAmount = Number(amount);
+    const fromCurrency = transactionCurrency; // The currency we are converting from
+    const toCurrency = selectedWalletCurrency; // The currency of the wallet
+
+    setTransactionCurrency(newCurrency); // Set the new currency first
+
+    if (!fromCurrency || !toCurrency || fromCurrency === toCurrency || !originalAmount) {
         return;
     }
-
+    
+    // The user has changed the currency dropdown. We assume the amount entered
+    // is in this new currency and convert it TO the wallet's currency.
     setIsConverting(true);
     try {
         const result = await autoCurrencyExchange({
-            amount: Number(amount),
-            fromCurrency: transactionCurrency!, // The currency of the amount field before conversion
-            toCurrency: newCurrency,
+            amount: originalAmount,
+            fromCurrency: newCurrency, // The new currency selected by the user
+            toCurrency: toCurrency,   // The wallet's currency
         });
+
+        // The transaction itself is now in the wallet's currency
         setAmount(result.convertedAmount);
-        setTransactionCurrency(newCurrency);
+        setTransactionCurrency(toCurrency);
+        toast({
+            title: "Amount Converted",
+            description: `${originalAmount} ${newCurrency} is approximately ${result.convertedAmount.toFixed(2)} ${toCurrency}.`,
+        });
+
     } catch (error) {
         console.error("Currency conversion failed:", error);
+        setTransactionCurrency(fromCurrency); // Revert on failure
         toast({
             title: "Conversion Failed",
             description: "Could not convert currency. Please try again.",
@@ -127,6 +142,7 @@ export function EditTransactionDialog({
         return;
     }
 
+    // By the time we submit, the amount should already be in the wallet's currency
     const updatedTransaction: Transaction = {
         ...transaction,
         amount: Number(amount),
@@ -135,7 +151,7 @@ export function EditTransactionDialog({
         category,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
-        currency: transactionCurrency,
+        currency: selectedWalletCurrency!,
         attachments,
     };
 
