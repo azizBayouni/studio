@@ -47,6 +47,7 @@ export type Debt = {
   type: 'payable' | 'receivable';
   person: string;
   amount: number;
+  currency: string;
   dueDate: string;
   status: 'paid' | 'unpaid';
 };
@@ -88,10 +89,10 @@ export const wallets: Wallet[] = [
 ];
 
 export const debts: Debt[] = [
-  { id: 'd1', type: 'payable', person: 'John Doe', amount: 500, dueDate: '2024-08-01', status: 'unpaid' },
-  { id: 'd2', type: 'receivable', person: 'Jane Smith', amount: 250, dueDate: '2024-08-15', status: 'unpaid' },
-  { id: 'd3', type: 'payable', person: 'Car Loan', amount: 350, dueDate: '2024-07-30', status: 'unpaid' },
-  { id: 'd4', type: 'payable', person: 'Alice', amount: 100, dueDate: '2024-07-25', status: 'paid' },
+  { id: 'd1', type: 'payable', person: 'John Doe', amount: 500, currency: 'USD', dueDate: '2024-08-01', status: 'unpaid' },
+  { id: 'd2', type: 'receivable', person: 'Jane Smith', amount: 250, currency: 'USD', dueDate: '2024-08-15', status: 'unpaid' },
+  { id: 'd3', type: 'payable', person: 'Car Loan', amount: 350, currency: 'USD', dueDate: '2024-07-30', status: 'unpaid' },
+  { id: 'd4', type: 'payable', person: 'Alice', amount: 100, currency: 'USD', dueDate: '2024-07-25', status: 'paid' },
 ];
 
 export const currencies = [

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,10 +23,34 @@ import { Overview } from '@/components/overview';
 import { transactions } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
+import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState(getDefaultCurrency());
+
+  // This is a placeholder for a more robust state management solution
+  // that would update when the currency actually changes.
+  useEffect(() => {
+    // A real app would listen for currency changes from a global state/context
+    setDefaultCurrency(getDefaultCurrency());
+  }, []); // For now, this just runs once on mount.
+
   const recentTransactions = transactions.slice(0, 5);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: defaultCurrency,
+    }).format(amount);
+  };
+
+  const formatTransactionAmount = (amount: number, currency: string) => {
+     return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  }
 
   return (
     <>
@@ -51,7 +76,7 @@ export default function Dashboard() {
                 <Wallet className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$45,231.89</div>
+                <div className="text-2xl font-bold">{formatCurrency(45231.89)}</div>
                 <p className="text-xs text-muted-foreground">
                   Across all wallets
                 </p>
@@ -63,7 +88,7 @@ export default function Dashboard() {
                 <TrendingUp className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-accent">+2,350.00</div>
+                <div className="text-2xl font-bold text-accent">+{formatCurrency(2350.00)}</div>
                 <p className="text-xs text-muted-foreground">
                   +18.1% from last month
                 </p>
@@ -75,7 +100,7 @@ export default function Dashboard() {
                 <TrendingDown className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">-$4,210.50</div>
+                <div className="text-2xl font-bold text-destructive">-{formatCurrency(4210.50)}</div>
                 <p className="text-xs text-muted-foreground">
                   +2.5% from last month
                 </p>
@@ -87,7 +112,7 @@ export default function Dashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$1,200.00</div>
+                <div className="text-2xl font-bold">{formatCurrency(1200.00)}</div>
                 <p className="text-xs text-muted-foreground">
                   3 Payable, 1 Receivable
                 </p>
@@ -128,7 +153,7 @@ export default function Dashboard() {
                          </TableCell>
                          <TableCell>{transaction.wallet}</TableCell>
                          <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
-                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                            {transaction.type === 'income' ? '+' : ''}{formatTransactionAmount(transaction.amount, transaction.currency)}
                          </TableCell>
                        </TableRow>
                     ))}

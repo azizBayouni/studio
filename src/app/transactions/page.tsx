@@ -35,6 +35,13 @@ export default function TransactionsPage() {
     setIsEditDialogOpen(true);
   };
 
+  const formatCurrency = (amount: number, currencyCode: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(amount);
+  };
+
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -101,7 +108,7 @@ export default function TransactionsPage() {
                     </TableCell>
                     <TableCell>{transaction.wallet}</TableCell>
                     <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : ''}`}>
-                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                      {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
                     </TableCell>
                   </TableRow>
                 ))}

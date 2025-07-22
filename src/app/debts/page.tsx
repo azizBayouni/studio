@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -11,10 +15,25 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { debts } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
+import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function DebtsPage() {
+  const [defaultCurrency, setDefaultCurrency] = useState(getDefaultCurrency());
+
+  // This is a placeholder for a more robust state management solution
+  useEffect(() => {
+    setDefaultCurrency(getDefaultCurrency());
+  }, []);
+
   const payables = debts.filter((d) => d.type === 'payable');
   const receivables = debts.filter((d) => d.type === 'receivable');
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -57,7 +76,7 @@ export default function DebtsPage() {
                       <Badge variant={debt.status === 'paid' ? 'secondary' : 'destructive'}>{debt.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium text-destructive">
-                      -${debt.amount.toFixed(2)}
+                      -{formatCurrency(debt.amount, debt.currency)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -85,7 +104,7 @@ export default function DebtsPage() {
                        <Badge variant={debt.status === 'paid' ? 'secondary' : 'default'}>{debt.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium text-accent">
-                      +${debt.amount.toFixed(2)}
+                      +{formatCurrency(debt.amount, debt.currency)}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -24,7 +24,7 @@ import { currencies } from "@/lib/data"
 import { FileUp, Download } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
-import { convertAllTransactions, convertAllWallets } from "@/services/transaction-service";
+import { convertAllTransactions, convertAllWallets, convertAllDebts } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 
 export default function SettingsPage() {
@@ -55,15 +55,16 @@ export default function SettingsPage() {
         });
         await convertAllTransactions(oldCurrency, selectedCurrency);
         await convertAllWallets(oldCurrency, selectedCurrency);
+        await convertAllDebts(oldCurrency, selectedCurrency);
         toast({
           title: "Conversion Successful",
-          description: `All transactions and wallets have been converted to ${selectedCurrency}.`,
+          description: `All financial data has been converted to ${selectedCurrency}.`,
         });
       } catch (error) {
         console.error("Conversion failed:", error);
         toast({
           title: "Conversion Failed",
-          description: "Could not convert all transactions. Please try again.",
+          description: "Could not convert all data. Please try again.",
           variant: "destructive",
         });
         return; 
@@ -77,6 +78,9 @@ export default function SettingsPage() {
       title: "Settings Saved",
       description: `Default currency set to ${selectedCurrency}.`,
     });
+    // A full page reload would be a simple way to force all components to re-render
+    // with the new currency. A more sophisticated app might use a global state manager.
+    window.location.reload();
   };
 
   return (
