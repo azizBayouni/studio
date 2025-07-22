@@ -10,6 +10,17 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,12 +38,12 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon, Download, Paperclip, X } from 'lucide-react';
+import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { categories, wallets } from '@/lib/data';
 import { useState, useEffect } from 'react';
-import { updateTransaction } from '@/services/transaction-service';
+import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
 
@@ -102,6 +113,18 @@ export function EditTransactionDialog({
 
     onOpenChange(false);
   };
+
+  const handleDelete = () => {
+    if (transaction) {
+        deleteTransaction(transaction.id);
+        toast({
+            title: 'Transaction Deleted',
+            description: 'The transaction has been successfully deleted.',
+            variant: 'destructive'
+        });
+        onOpenChange(false);
+    }
+  }
 
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,13 +284,36 @@ export function EditTransactionDialog({
                 )}
                 </div>
             </div>
-            <DialogFooter>
-            <DialogClose asChild>
-                <Button type="button" variant="secondary">
-                Cancel
-                </Button>
-            </DialogClose>
-            <Button type="submit">Save Changes</Button>
+            <DialogFooter className="sm:justify-between">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button type="button" variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this
+                            transaction from our servers.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex gap-2">
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">
+                        Cancel
+                        </Button>
+                    </DialogClose>
+                    <Button type="submit">Save Changes</Button>
+                </div>
             </DialogFooter>
         </form>
       </DialogContent>

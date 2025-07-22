@@ -14,3 +14,12 @@ export function updateTransaction(updatedTransaction: Transaction): void {
         console.error(`Transaction with id ${updatedTransaction.id} not found.`);
     }
 }
+
+export function deleteTransaction(transactionId: string): void {
+    const index = transactions.findIndex(t => t.id === transactionId);
+    if (index !== -1) {
+        transactions.splice(index, 1);
+    } else {
+        console.error(`Transaction with id ${transactionId} not found.`);
+    }
+}
