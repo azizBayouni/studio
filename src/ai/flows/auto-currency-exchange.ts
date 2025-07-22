@@ -54,6 +54,7 @@ const getExchangeRate = ai.defineTool(
   }
 );
 
+// This prompt is no longer used by the flow but is kept for potential future use or reference.
 const prompt = ai.definePrompt({
   name: 'autoCurrencyExchangePrompt',
   tools: [getExchangeRate],
@@ -66,7 +67,7 @@ From Currency: {{fromCurrency}}
 To Currency: {{toCurrency}}
 
 Use the getExchangeRate tool to get the current exchange rate.`,
-  system: `You are a currency conversion expert. Use the getExchangeRate tool to determine the current exchange rate and convert the amount to the specified currency. Return the converted amount.`, // Added system prompt
+  system: `You are a currency conversion expert. Use the getExchangeRate tool to determine the current exchange rate and convert the amount to the specified currency. Return the converted amount.`, 
 });
 
 const autoCurrencyExchangeFlow = ai.defineFlow(
@@ -75,8 +76,21 @@ const autoCurrencyExchangeFlow = ai.defineFlow(
     inputSchema: AutoCurrencyExchangeInputSchema,
     outputSchema: AutoCurrencyExchangeOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    if (input.fromCurrency === input.toCurrency) {
+      return { convertedAmount: input.amount };
+    }
+    
+    // Directly call the tool to get the exchange rate
+    const exchangeRate = await getExchangeRate({ 
+        fromCurrency: input.fromCurrency, 
+        toCurrency: input.toCurrency 
+    });
+
+    // Perform the conversion
+    const convertedAmount = input.amount * exchangeRate;
+    
+    // Return the result in the expected format
+    return { convertedAmount };
   }
 );
