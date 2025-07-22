@@ -47,6 +47,11 @@ const getExchangeRate = ai.defineTool(
       USD: { EUR: 0.93, JPY: 157.5, GBP: 0.79, AUD: 1.5, CAD: 1.37, CHF: 0.9, CNY: 7.25, USD: 1 },
       EUR: { USD: 1.08, JPY: 169.5, GBP: 0.85, AUD: 1.62, CAD: 1.47, CHF: 0.97, CNY: 7.8, EUR: 1 },
       GBP: { USD: 1.27, JPY: 199.5, EUR: 1.18, AUD: 1.9, CAD: 1.74, CHF: 1.14, CNY: 9.2, GBP: 1 },
+      JPY: { USD: 0.0063, EUR: 0.0059, GBP: 0.0050, AUD: 0.0095, CAD: 0.0087, CHF: 0.0057, CNY: 0.046, JPY: 1 },
+      AUD: { USD: 0.67, EUR: 0.62, GBP: 0.53, JPY: 105.0, CAD: 0.91, CHF: 0.60, CNY: 4.83, AUD: 1 },
+      CAD: { USD: 0.73, EUR: 0.68, GBP: 0.57, JPY: 115.0, AUD: 1.10, CHF: 0.66, CNY: 5.30, CAD: 1 },
+      CHF: { USD: 1.11, EUR: 1.03, GBP: 0.88, JPY: 175.0, AUD: 1.67, CAD: 1.52, CNY: 8.05, CHF: 1 },
+      CNY: { USD: 0.14, EUR: 0.13, GBP: 0.11, JPY: 21.7, AUD: 0.21, CAD: 0.19, CHF: 0.12, CNY: 1 },
     };
 
     const fromRate = rates[input.fromCurrency];
@@ -64,6 +69,9 @@ const getExchangeRate = ai.defineTool(
     if (input.fromCurrency === input.toCurrency) {
         return 1;
     } else {
+        // Fallback for less common currencies, simulating a generic rate against USD
+        if (input.toCurrency === 'USD') return 0.1;
+        if (input.fromCurrency === 'USD') return 10;
         return 1.05;
     }
   }
