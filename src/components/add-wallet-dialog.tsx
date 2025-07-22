@@ -18,10 +18,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { emojiIcons } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { emojiIcons, currencies } from '@/lib/data';
 import { addWallet } from '@/services/wallet-service';
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { getDefaultCurrency } from '@/services/settings-service';
 
 interface AddWalletDialogProps {
   isOpen: boolean;
@@ -34,6 +42,7 @@ export function AddWalletDialog({
 }: AddWalletDialogProps) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('🏦');
+  const [currency, setCurrency] = useState(getDefaultCurrency());
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast();
 
@@ -42,6 +51,7 @@ export function AddWalletDialog({
       // Reset form when dialog opens
       setName('');
       setIcon('🏦');
+      setCurrency(getDefaultCurrency());
     }
   }, [isOpen]);
 
@@ -51,6 +61,7 @@ export function AddWalletDialog({
       addWallet({
         name,
         icon,
+        currency,
       });
       toast({
           title: "Wallet Added",
@@ -104,6 +115,17 @@ export function AddWalletDialog({
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="e.g. Vacation Fund" />
               </div>
             </div>
+             <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>

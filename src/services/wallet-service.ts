@@ -1,11 +1,9 @@
 
 import { wallets, type Wallet } from '@/lib/data';
-import { getDefaultCurrency } from './settings-service';
 
-export function addWallet(newWallet: Omit<Wallet, 'id' | 'currency' | 'balance'>): void {
+export function addWallet(newWallet: Omit<Wallet, 'id' | 'balance'>): void {
     const newId = 'w' + (Math.max(...wallets.map(w => parseInt(w.id.substring(1)))) + 1).toString();
-    const currency = getDefaultCurrency();
-    wallets.push({ ...newWallet, id: newId, currency, balance: 0 });
+    wallets.push({ ...newWallet, id: newId, balance: 0 });
 }
 
 export function updateWallet(updatedWallet: Wallet): void {

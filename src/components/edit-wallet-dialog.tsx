@@ -18,7 +18,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { emojiIcons, type Wallet } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { emojiIcons, type Wallet, currencies } from '@/lib/data';
 import { updateWallet } from '@/services/wallet-service';
 import { useEffect, useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +43,7 @@ export function EditWalletDialog({
 }: EditWalletDialogProps) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState<string | undefined>(undefined);
+  const [currency, setCurrency] = useState('');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast();
 
@@ -43,6 +51,7 @@ export function EditWalletDialog({
     if (wallet) {
       setName(wallet.name);
       setIcon(wallet.icon);
+      setCurrency(wallet.currency);
     }
   }, [wallet]);
 
@@ -53,6 +62,7 @@ export function EditWalletDialog({
         ...wallet,
         name,
         icon,
+        currency,
       };
       updateWallet(updatedWallet);
       toast({
@@ -72,7 +82,7 @@ export function EditWalletDialog({
           <DialogHeader>
             <DialogTitle>Edit Wallet</DialogTitle>
             <DialogDescription>
-              Update the name and icon for your wallet.
+              Update the name, icon, and currency for your wallet.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -109,6 +119,20 @@ export function EditWalletDialog({
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
             </div>
+            <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                 <p className="text-xs text-muted-foreground">
+                    Changing the currency will not convert the balance.
+                </p>
+              </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
