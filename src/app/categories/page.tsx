@@ -8,8 +8,14 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { categories } from '@/lib/data';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function CategoriesPage() {
   const getCategoryName = (id: string | null): string => {
@@ -38,19 +44,50 @@ export default function CategoriesPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Category</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead>Parent Category</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {categories.map((category) => (
               <TableRow key={category.id}>
-                <TableCell className="font-medium">{category.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {category.icon && <category.icon className="h-4 w-4 text-muted-foreground" />}
+                    <span>{category.name}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={category.type === 'income' ? 'default' : 'secondary'} className={category.type === 'income' ? 'bg-accent text-accent-foreground' : ''}>
+                    {category.type}
+                  </Badge>
+                </TableCell>
                 <TableCell>
                   {category.parentId ? (
-                     <Badge variant="secondary">{getCategoryName(category.parentId)}</Badge>
+                     <Badge variant="outline">{getCategoryName(category.parentId)}</Badge>
                   ) : (
                     '-'
                   )}
+                </TableCell>
+                <TableCell className="text-right">
+                   <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                          </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}

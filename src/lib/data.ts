@@ -1,6 +1,22 @@
+import {
+  Utensils,
+  ShoppingBag,
+  Home,
+  Car,
+  TrendingUp,
+  Receipt,
+  Shirt,
+  Laptop,
+  Building,
+  Fuel,
+  Landmark,
+  PiggyBank,
+} from 'lucide-react';
+
 export type Category = {
   id: string;
   name: string;
+  type: 'income' | 'expense';
   parentId: string | null;
   icon?: React.ComponentType<{ className?: string }>;
 };
@@ -34,21 +50,21 @@ export type Debt = {
 };
 
 export const categories: Category[] = [
-  { id: '1', name: 'Food & Drink', parentId: null },
-  { id: '2', name: 'Restaurants', parentId: '1' },
-  { id: '3', name: 'Groceries', parentId: '1' },
-  { id: '4', name: 'Shopping', parentId: null },
-  { id: '5', name: 'Clothing', parentId: '4' },
-  { id: '6', name: 'Electronics', parentId: '4' },
-  { id: '7', name: 'Housing', parentId: null },
-  { id: '8', name: 'Rent', parentId: '7' },
-  { id: '9', name: 'Utilities', parentId: '7' },
-  { id: '10', name: 'Transportation', parentId: null },
-  { id: '11', name: 'Public Transport', parentId: '10' },
-  { id: '12', name: 'Fuel', parentId: '10' },
-  { id: '13', name: 'Income', parentId: null },
-  { id: '14', name: 'Salary', parentId: '13' },
-  { id: '15', name: 'Freelance', parentId: '13' },
+  { id: '1', name: 'Food & Drink', type: 'expense', parentId: null, icon: Utensils },
+  { id: '2', name: 'Restaurants', type: 'expense', parentId: '1', icon: Receipt },
+  { id: '3', name: 'Groceries', type: 'expense', parentId: '1', icon: ShoppingBag },
+  { id: '4', name: 'Shopping', type: 'expense', parentId: null, icon: ShoppingBag },
+  { id: '5', name: 'Clothing', type: 'expense', parentId: '4', icon: Shirt },
+  { id: '6', name: 'Electronics', type: 'expense', parentId: '4', icon: Laptop },
+  { id: '7', name: 'Housing', type: 'expense', parentId: null, icon: Home },
+  { id: '8', name: 'Rent', type: 'expense', parentId: '7', icon: Building },
+  { id: '9', name: 'Utilities', type: 'expense', parentId: '7', icon: Receipt },
+  { id: '10', name: 'Transportation', type: 'expense', parentId: null, icon: Car },
+  { id: '11', name: 'Public Transport', type: 'expense', parentId: '10', icon: Car },
+  { id: '12', name: 'Fuel', type: 'expense', parentId: '10', icon: Fuel },
+  { id: '13', name: 'Income', type: 'income', parentId: null, icon: TrendingUp },
+  { id: '14', name: 'Salary', type: 'income', parentId: '13', icon: Landmark },
+  { id: '15', name: 'Freelance', type: 'income', parentId: '13', icon: PiggyBank },
 ];
 
 export const transactions: Transaction[] = [
