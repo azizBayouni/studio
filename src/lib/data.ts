@@ -59,6 +59,11 @@ export type Debt = {
   status: 'paid' | 'unpaid';
 };
 
+export type Event = {
+  id: string;
+  name: string;
+};
+
 export const user: User = {
     name: 'John Doe',
     email: 'john.doe@example.com',
@@ -121,7 +126,7 @@ export const currencies = [
   "MZN", "ZMW", "MWK", "GHS", "ETB", "KES", "UGX", "RWF", "BWP", "NAD"
 ];
 
-export const events = [
+export const events: Event[] = [
   { id: 'e1', name: 'Europe Trip 2024' },
   { id: 'e2', name: 'Client Project in Dubai' },
   { id: 'e3', name: 'Family Vacation Japan' },

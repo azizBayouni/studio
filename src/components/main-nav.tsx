@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,6 +20,7 @@ import {
   LineChart,
   Landmark,
   LayoutGrid,
+  CalendarDays,
 } from 'lucide-react';
 
 export function MainNav() {
@@ -31,6 +33,7 @@ export function MainNav() {
     { href: '/reports', label: 'Reports', icon: LineChart },
     { href: '/debts', label: 'Debts', icon: Users },
     { href: '/wallets', label: 'Wallets', icon: Wallet },
+    { href: '/events', label: 'Events', icon: CalendarDays },
   ];
 
   return (
