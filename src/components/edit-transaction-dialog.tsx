@@ -41,11 +41,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { categories, wallets } from '@/lib/data';
+import { categories, wallets, currencies } from '@/lib/data';
 import { useState, useEffect } from 'react';
 import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
+import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -65,7 +66,11 @@ export function EditTransactionDialog({
   const [wallet, setWallet] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [transactionCurrency, setTransactionCurrency] = useState<string | undefined>();
+  const [isConverting, setIsConverting] = useState(false);
   const { toast } = useToast();
+
+  const selectedWalletCurrency = wallets.find(w => w.name === wallet)?.currency;
 
   useEffect(() => {
     if (transaction) {
@@ -76,14 +81,44 @@ export function EditTransactionDialog({
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
+      setTransactionCurrency(transaction.currency);
     }
   }, [transaction]);
 
   if (!transaction) return null;
 
+  const handleCurrencyChange = async (newCurrency: string) => {
+    const originalCurrency = selectedWalletCurrency;
+    if (!originalCurrency || originalCurrency === newCurrency || !amount) {
+        setTransactionCurrency(newCurrency);
+        return;
+    }
+
+    setIsConverting(true);
+    try {
+        const result = await autoCurrencyExchange({
+            amount: Number(amount),
+            fromCurrency: transactionCurrency!, // The currency of the amount field before conversion
+            toCurrency: newCurrency,
+        });
+        setAmount(result.convertedAmount);
+        setTransactionCurrency(newCurrency);
+    } catch (error) {
+        console.error("Currency conversion failed:", error);
+        toast({
+            title: "Conversion Failed",
+            description: "Could not convert currency. Please try again.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsConverting(false);
+    }
+  }
+
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description || !category || !wallet || !date) {
+    if (!amount || !description || !category || !wallet || !date || !transactionCurrency) {
         toast({
             title: "Missing Fields",
             description: "Please fill out all required fields.",
@@ -100,7 +135,7 @@ export function EditTransactionDialog({
         category,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
-        currency: wallets.find(w => w.name === wallet)?.currency || 'USD',
+        currency: transactionCurrency,
         attachments,
     };
 
@@ -170,8 +205,6 @@ export function EditTransactionDialog({
     URL.revokeObjectURL(url);
   }
 
-  const selectedWalletCurrency = wallets.find(w => w.name === wallet)?.currency;
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -214,8 +247,15 @@ export function EditTransactionDialog({
             <div className="space-y-2">
                 <Label htmlFor="amount">Amount</Label>
                  <div className="flex items-center gap-2">
-                    <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required className="flex-1"/>
-                    <span className="flex items-center justify-center w-16 h-10 text-sm text-muted-foreground bg-muted rounded-md">{selectedWalletCurrency || '...'}</span>
+                    <Input id="amount" type="number" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} required className="flex-1" disabled={isConverting} />
+                    <Select value={transactionCurrency} onValueChange={handleCurrencyChange} disabled={!wallet || isConverting}>
+                        <SelectTrigger className="w-32">
+                            <SelectValue placeholder="Currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
             <div className="space-y-2">
@@ -317,7 +357,9 @@ export function EditTransactionDialog({
                         Cancel
                         </Button>
                     </DialogClose>
-                    <Button type="submit">Save Changes</Button>
+                    <Button type="submit" disabled={isConverting}>
+                        {isConverting ? 'Converting...' : 'Save Changes'}
+                    </Button>
                 </div>
             </DialogFooter>
         </form>
