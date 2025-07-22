@@ -31,7 +31,7 @@ export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [defaultCurrency, setDefaultCurrency] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [walletFilter, setWalletFilter] = useState('all');
