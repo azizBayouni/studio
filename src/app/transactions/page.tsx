@@ -25,6 +25,7 @@ import { PlusCircle, Paperclip } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -32,7 +33,7 @@ export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [walletFilter, setWalletFilter] = useState('all');
 
   // This effect ensures the component re-renders when the currency changes.
@@ -59,12 +60,14 @@ export default function TransactionsPage() {
         const categoryMatch = transaction.category.toLowerCase().includes(searchLower);
         const searchMatches = descriptionMatch || categoryMatch;
 
-        const categoryFilterMatch = categoryFilter === 'all' || transaction.category === categoryFilter;
+        const categoryFilterMatch = selectedCategories.length === 0 || selectedCategories.includes(transaction.category);
         const walletFilterMatch = walletFilter === 'all' || transaction.wallet === walletFilter;
 
         return searchMatches && categoryFilterMatch && walletFilterMatch;
     });
-  }, [searchQuery, categoryFilter, walletFilter]);
+  }, [searchQuery, selectedCategories, walletFilter]);
+
+  const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
 
   return (
     <>
@@ -85,17 +88,13 @@ export default function TransactionsPage() {
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
               <Input placeholder="Search by description or category..." className="max-w-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="md:w-[180px]">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.filter(c => c.parentId === null).map((category) => (
-                      <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <MultiSelect
+                options={categoryOptions}
+                selected={selectedCategories}
+                onChange={setSelectedCategories}
+                className="md:w-[250px]"
+                placeholder="Filter by category"
+              />
               <Select value={walletFilter} onValueChange={setWalletFilter}>
                 <SelectTrigger className="md:w-[180px]">
                   <SelectValue placeholder="Filter by wallet" />
