@@ -47,6 +47,7 @@ import {
   parseISO,
   isWithinInterval,
   format,
+  endOfDay,
 } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -127,7 +128,7 @@ export default function TransactionsPage() {
         const categoryFilterMatch = selectedCategories.length === 0 || selectedCategories.includes(transaction.category);
         const walletFilterMatch = walletFilter === 'all' || transaction.wallet === walletFilter;
 
-        const dateFilterMatch = !dateRange || (dateRange.from && isWithinInterval(parseISO(transaction.date), { start: dateRange.from, end: dateRange.to || dateRange.from }));
+        const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(parseISO(transaction.date), { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) });
 
         return searchMatches && categoryFilterMatch && walletFilterMatch && dateFilterMatch;
     });
@@ -261,5 +262,4 @@ export default function TransactionsPage() {
         transaction={selectedTransaction}
       />
     </>
-  );
-}
+    
