@@ -1,3 +1,4 @@
+
 import {
   Utensils,
   ShoppingBag,
@@ -18,7 +19,7 @@ export type Category = {
   name: string;
   type: 'income' | 'expense';
   parentId: string | null;
-  icon?: React.ComponentType<{ className?: string }>;
+  icon?: string;
 };
 
 export type Transaction = {
@@ -50,21 +51,21 @@ export type Debt = {
 };
 
 export const categories: Category[] = [
-  { id: '1', name: 'Food & Drink', type: 'expense', parentId: null, icon: Utensils },
-  { id: '2', name: 'Restaurants', type: 'expense', parentId: '1', icon: Receipt },
-  { id: '3', name: 'Groceries', type: 'expense', parentId: '1', icon: ShoppingBag },
-  { id: '4', name: 'Shopping', type: 'expense', parentId: null, icon: ShoppingBag },
-  { id: '5', name: 'Clothing', type: 'expense', parentId: '4', icon: Shirt },
-  { id: '6', name: 'Electronics', type: 'expense', parentId: '4', icon: Laptop },
-  { id: '7', name: 'Housing', type: 'expense', parentId: null, icon: Home },
-  { id: '8', name: 'Rent', type: 'expense', parentId: '7', icon: Building },
-  { id: '9', name: 'Utilities', type: 'expense', parentId: '7', icon: Receipt },
-  { id: '10', name: 'Transportation', type: 'expense', parentId: null, icon: Car },
-  { id: '11', name: 'Public Transport', type: 'expense', parentId: '10', icon: Car },
-  { id: '12', name: 'Fuel', type: 'expense', parentId: '10', icon: Fuel },
-  { id: '13', name: 'Income', type: 'income', parentId: null, icon: TrendingUp },
-  { id: '14', name: 'Salary', type: 'income', parentId: '13', icon: Landmark },
-  { id: '15', name: 'Freelance', type: 'income', parentId: '13', icon: PiggyBank },
+  { id: '1', name: 'Food & Drink', type: 'expense', parentId: null, icon: '🍔' },
+  { id: '2', name: 'Restaurants', type: 'expense', parentId: '1', icon: '🧾' },
+  { id: '3', name: 'Groceries', type: 'expense', parentId: '1', icon: '🛒' },
+  { id: '4', name: 'Shopping', type: 'expense', parentId: null, icon: '🛍️' },
+  { id: '5', name: 'Clothing', type: 'expense', parentId: '4', icon: '👕' },
+  { id: '6', name: 'Electronics', type: 'expense', parentId: '4', icon: '💻' },
+  { id: '7', name: 'Housing', type: 'expense', parentId: null, icon: '🏠' },
+  { id: '8', name: 'Rent', type: 'expense', parentId: '7', icon: '🏢' },
+  { id: '9', name: 'Utilities', type: 'expense', parentId: '7', icon: '🧾' },
+  { id: '10', name: 'Transportation', type: 'expense', parentId: null, icon: '🚗' },
+  { id: '11', name: 'Public Transport', type: 'expense', parentId: '10', icon: '🚌' },
+  { id: '12', name: 'Fuel', type: 'expense', parentId: '10', icon: '⛽' },
+  { id: '13', name: 'Income', type: 'income', parentId: null, icon: '📈' },
+  { id: '14', name: 'Salary', type: 'income', parentId: '13', icon: '🏛️' },
+  { id: '15', name: 'Freelance', type: 'income', parentId: '13', icon: '🐷' },
 ];
 
 export const transactions: Transaction[] = [
@@ -102,4 +103,10 @@ export const events = [
   { id: 'e1', name: 'Europe Trip 2024' },
   { id: 'e2', name: 'Client Project in Dubai' },
   { id: 'e3', name: 'Family Vacation Japan' },
+];
+
+export const emojiIcons = [
+  '🍔', '🧾', '🛒', '🛍️', '👕', '💻', '🏠', '🏢', '🚌', '⛽', 
+  '📈', '🏛️', '🐷', '🎁', '🎓', '✈️', '🏝️', '🏥', '💊', '🎉',
+  '💡', '💰', '💸', '💳', '🤔'
 ];

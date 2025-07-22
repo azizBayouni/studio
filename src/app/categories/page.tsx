@@ -69,7 +69,7 @@ export default function CategoriesPage() {
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      {category.icon && <category.icon className="h-4 w-4 text-muted-foreground" />}
+                      <span className="text-lg">{category.icon}</span>
                       <span>{category.name}</span>
                     </div>
                   </TableCell>

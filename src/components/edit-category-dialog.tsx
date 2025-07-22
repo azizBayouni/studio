@@ -20,8 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { categories, type Category } from '@/lib/data';
+import { categories, emojiIcons, type Category } from '@/lib/data';
 import { updateCategory } from '@/services/category-service';
 import { useEffect, useState } from 'react';
 import { useToast } from "@/hooks/use-toast"
@@ -40,6 +45,8 @@ export function EditCategoryDialog({
   const [name, setName] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [parentId, setParentId] = useState<string | null>(null);
+  const [icon, setIcon] = useState<string | undefined>(undefined);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast()
 
   useEffect(() => {
@@ -47,6 +54,7 @@ export function EditCategoryDialog({
       setName(category.name);
       setType(category.type);
       setParentId(category.parentId);
+      setIcon(category.icon);
     }
   }, [category]);
 
@@ -58,6 +66,7 @@ export function EditCategoryDialog({
         name,
         type,
         parentId,
+        icon,
       };
       updateCategory(updatedCategory);
       toast({
@@ -85,9 +94,38 @@ export function EditCategoryDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="flex items-end gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="icon">Icon</Label>
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-16 h-16 text-2xl">
+                      {icon || '...'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2">
+                    <div className="grid grid-cols-5 gap-2">
+                      {emojiIcons.map((emoji) => (
+                        <Button
+                          key={emoji}
+                          variant="ghost"
+                          className="text-lg p-2"
+                          onClick={() => {
+                            setIcon(emoji);
+                            setIsPopoverOpen(false);
+                          }}
+                        >
+                          {emoji}
+                        </Button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Type</Label>
