@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -24,11 +24,17 @@ import { Input } from '@/components/ui/input';
 import { PlusCircle, Paperclip } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
+import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+
+  useEffect(() => {
+    setDefaultCurrency(getDefaultCurrency());
+  }, []);
 
   const handleRowClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);

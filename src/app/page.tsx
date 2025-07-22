@@ -27,14 +27,11 @@ import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [defaultCurrency, setDefaultCurrency] = useState(getDefaultCurrency());
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
-  // This is a placeholder for a more robust state management solution
-  // that would update when the currency actually changes.
   useEffect(() => {
-    // A real app would listen for currency changes from a global state/context
     setDefaultCurrency(getDefaultCurrency());
-  }, []); // For now, this just runs once on mount.
+  }, []);
 
   const recentTransactions = transactions.slice(0, 5);
 

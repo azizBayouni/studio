@@ -18,9 +18,8 @@ import { PlusCircle } from 'lucide-react';
 import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function DebtsPage() {
-  const [defaultCurrency, setDefaultCurrency] = useState(getDefaultCurrency());
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
-  // This is a placeholder for a more robust state management solution
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
