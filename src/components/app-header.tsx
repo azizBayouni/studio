@@ -1,3 +1,4 @@
+
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -16,13 +17,31 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Plane, LogOut, User, Settings, CreditCard } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TravelModeDialog } from './travel-mode-dialog';
+import { getUser } from '@/services/user-service';
+import type { User as UserType } from '@/lib/data';
 
 export function AppHeader() {
   const pathname = usePathname();
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [user, setUser] = useState<UserType | null>(null);
+
+  const fetchUser = () => {
+    setUser(getUser());
+  };
+
+  useEffect(() => {
+    fetchUser();
+
+    // Listen for a custom event to re-fetch user data
+    window.addEventListener('profileUpdated', fetchUser);
+
+    return () => {
+      window.removeEventListener('profileUpdated', fetchUser);
+    };
+  }, []);
 
   const getPageTitle = () => {
     if (pathname === '/') return 'Dashboard';
@@ -35,6 +54,14 @@ export function AppHeader() {
     if (checked) {
       setIsDialogOpen(true);
     }
+  };
+
+  const getInitials = (name: string) => {
+    const names = name.split(' ');
+    if (names.length > 1) {
+      return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   };
 
   return (
@@ -57,17 +84,17 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src="https://placehold.co/100x100.png" alt="@user" data-ai-hint="person avatar" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src={user?.avatar} alt="@user" data-ai-hint="person avatar" />
+                <AvatarFallback>{user ? getInitials(user.name) : ''}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none">{user?.name}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john.doe@example.com
+                  {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>

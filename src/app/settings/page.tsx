@@ -26,8 +26,11 @@ import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-serv
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
+import { getUser, updateUser } from "@/services/user-service";
 
 export default function SettingsPage() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
@@ -37,9 +40,24 @@ export default function SettingsPage() {
     const initialCurrency = getDefaultCurrency();
     setCurrentDefaultCurrency(initialCurrency);
     setSelectedCurrency(initialCurrency);
+
+    const currentUser = getUser();
+    setName(currentUser.name);
+    setEmail(currentUser.email);
   }, []);
 
-  const handleSaveClick = () => {
+  const handleProfileSave = () => {
+    updateUser({ name, email });
+    toast({
+      title: "Profile Saved",
+      description: "Your name and email have been updated.",
+    });
+    // This is a simple way to force the header to update.
+    // In a more complex app, global state management would be better.
+    window.dispatchEvent(new Event('profileUpdated'));
+  };
+
+  const handleCurrencySaveClick = () => {
     if (selectedCurrency !== currentDefaultCurrency) {
       setIsConfirmDialogOpen(true);
     } else {
@@ -109,15 +127,15 @@ export default function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" defaultValue="John Doe" />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue="john.doe@example.com" />
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button>Save</Button>
+              <Button onClick={handleProfileSave}>Save</Button>
             </CardFooter>
           </Card>
 
@@ -140,7 +158,7 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleSaveClick}>Save</Button>
+              <Button onClick={handleCurrencySaveClick}>Save</Button>
             </CardFooter>
           </Card>
 

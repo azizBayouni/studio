@@ -14,6 +14,12 @@ import {
   PiggyBank,
 } from 'lucide-react';
 
+export type User = {
+  name: string;
+  email: string;
+  avatar: string;
+};
+
 export type Category = {
   id: string;
   name: string;
@@ -51,6 +57,12 @@ export type Debt = {
   currency: string;
   dueDate: string;
   status: 'paid' | 'unpaid';
+};
+
+export const user: User = {
+    name: 'John Doe',
+    email: 'john.doe@example.com',
+    avatar: 'https://placehold.co/100x100.png',
 };
 
 export const categories: Category[] = [
