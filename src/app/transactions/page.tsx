@@ -32,6 +32,7 @@ export default function TransactionsPage() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
+  // This effect ensures the component re-renders when the currency changes.
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
