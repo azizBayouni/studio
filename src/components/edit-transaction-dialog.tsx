@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon, Paperclip, X } from 'lucide-react';
+import { CalendarIcon, Download, Paperclip, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { categories, wallets } from '@/lib/data';
@@ -136,6 +136,17 @@ export function EditTransactionDialog({
     return options;
   };
 
+  const handleDownload = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -230,10 +241,20 @@ export function EditTransactionDialog({
                     <div className="space-y-2 pt-2">
                     {attachments.map((file, index) => (
                         <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
-                        <span className="truncate">{file.name}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(index)}>
-                            <X className="h-4 w-4" />
-                        </Button>
+                            <a 
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleDownload(file);
+                                }}
+                                className="truncate flex items-center gap-2 hover:underline"
+                            >
+                                <Download className="h-4 w-4"/>
+                                {file.name}
+                            </a>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(index)}>
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
                     ))}
                     </div>
