@@ -127,13 +127,16 @@ export function NewTransactionDialog({
     }
   };
 
-  const handleAmountChange = async (value: string) => {
+  const handleAmountBlur = async () => {
+    if (isTravelMode && originalAmount) {
+      await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
+    }
+  };
+
+  const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
     setOriginalAmount(numericValue);
-
-    if (isTravelMode && numericValue) {
-      await convertAmount(numericValue, transactionCurrency, defaultCurrency);
-    } else {
+    if (!isTravelMode) {
       setAmount(numericValue);
     }
   };
@@ -255,7 +258,7 @@ export function NewTransactionDialog({
             <div className="space-y-2">
                 <Label htmlFor="amount">Amount</Label>
                 <div className="flex items-center gap-2">
-                    <Input id="amount" type="number" placeholder="0.00" value={originalAmount} onChange={(e) => handleAmountChange(e.target.value)} required className="flex-1" disabled={isConverting} />
+                    <Input id="amount" type="number" placeholder="0.00" value={originalAmount} onChange={(e) => handleAmountChange(e.target.value)} onBlur={handleAmountBlur} required className="flex-1" disabled={isConverting} />
                      <Select value={transactionCurrency} onValueChange={setTransactionCurrency} disabled={!isTravelMode}>
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Currency" />

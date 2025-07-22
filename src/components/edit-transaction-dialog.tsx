@@ -76,15 +76,20 @@ export function EditTransactionDialog({
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const { toast } = useToast();
 
-  const handleAmountChange = async (value: string) => {
+  const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
     setOriginalAmount(numericValue);
-    if (isTravelMode && numericValue) {
-      await convertAmount(numericValue, transactionCurrency, defaultCurrency);
-    } else {
+    if (!isTravelMode) {
       setAmount(numericValue);
     }
   };
+
+  const handleAmountBlur = async () => {
+    if (isTravelMode && originalAmount) {
+      await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
+    }
+  };
+
 
   const convertAmount = async (
     amountToConvert: number,
@@ -139,9 +144,6 @@ export function EditTransactionDialog({
       
       if (travelMode.isActive && travelMode.currency) {
           setTransactionCurrency(travelMode.currency);
-          // If in travel mode, we assume the original amount was in default currency,
-          // and we show what it would be in travel currency.
-          // This is a simplification; a real app might store original amount/currency.
       } else {
           setTransactionCurrency(transaction.currency);
       }
@@ -304,14 +306,9 @@ export function EditTransactionDialog({
                   id="amount"
                   type="number"
                   placeholder="0.00"
-                  value={isTravelMode ? originalAmount : amount}
-                  onChange={(e) =>
-                    isTravelMode
-                      ? handleAmountChange(e.target.value)
-                      : setAmount(
-                          e.target.value === '' ? '' : parseFloat(e.target.value)
-                        )
-                  }
+                  value={originalAmount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  onBlur={handleAmountBlur}
                   required
                   className="flex-1"
                   disabled={isConverting}
