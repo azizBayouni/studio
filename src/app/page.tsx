@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -14,15 +15,29 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DollarSign, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, Wallet, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { Overview } from '@/components/overview';
 import { transactions } from '@/lib/data';
+import { Button } from '@/components/ui/button';
 
 export default function Dashboard() {
   const recentTransactions = transactions.slice(0, 5);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            An overview of your financial status.
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+            <Button>
+                <PlusCircle className="mr-2 h-4 w-4" /> New Transaction
+            </Button>
+        </div>
+      </div>
       <div className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
