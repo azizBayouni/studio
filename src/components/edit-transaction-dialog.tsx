@@ -85,7 +85,7 @@ export function EditTransactionDialog({
   };
 
   const handleAmountBlur = async () => {
-    if (isTravelMode && originalAmount) {
+    if (isTravelMode && originalAmount && transactionCurrency && defaultCurrency) {
       await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
     }
   };
@@ -142,22 +142,27 @@ export function EditTransactionDialog({
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
       
-      // In travel mode, the `originalAmount` should be in the travel currency.
-      // We need to reverse-convert the saved `transaction.amount` (which is in default currency)
-      // back to the travel currency for display.
-      // For simplicity in this mock, we just set both to the saved amount.
-      // A real implementation would require reverse conversion or storing original amount.
-      setAmount(transaction.amount); 
-      setOriginalAmount(transaction.amount);
+      const savedAmount = transaction.amount;
+      setAmount(savedAmount);
+      setOriginalAmount(savedAmount);
 
       if (travelMode.isActive && travelMode.currency) {
+          // In travel mode, the transaction currency should be the travel currency
           setTransactionCurrency(travelMode.currency);
+          // If the edited transaction's currency is the default currency, we assume it was already converted.
+          // The `originalAmount` should be displayed in the travel currency.
+          // For this mock, we don't have the original pre-conversion amount,
+          // so we'll just set it to the saved amount and let the user re-enter if needed for re-conversion.
+          if (transaction.currency === currentDefaultCurrency) {
+            setOriginalAmount(savedAmount); // User might need to adjust this if they want to reconvert
+          }
       } else {
+          // Not in travel mode, use the transaction's own currency
           setTransactionCurrency(transaction.currency);
       }
 
     }
-  }, [transaction, isOpen]);
+  }, [transaction]);
 
 
   useEffect(() => {
@@ -191,7 +196,7 @@ export function EditTransactionDialog({
         category,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
-        currency: defaultCurrency,
+        currency: defaultCurrency, // Always save in default currency
         attachments,
     };
 

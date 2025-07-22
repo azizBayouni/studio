@@ -129,7 +129,7 @@ export function NewTransactionDialog({
   };
 
   const handleAmountBlur = async () => {
-    if (isTravelMode && originalAmount) {
+    if (isTravelMode && originalAmount && transactionCurrency && defaultCurrency) {
       await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
     }
   };
@@ -137,7 +137,6 @@ export function NewTransactionDialog({
   const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
     setOriginalAmount(numericValue);
-    // If not in travel mode, the display amount is the same as the entered amount
     if (!isTravelMode) {
       setAmount(numericValue);
     }
