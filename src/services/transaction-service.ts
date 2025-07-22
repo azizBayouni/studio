@@ -3,14 +3,16 @@ import { transactions, wallets, debts, type Transaction, type Wallet, type Debt 
 import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 
 export function addTransaction(newTransaction: Omit<Transaction, 'id'>): void {
-    const newId = 't' + (Math.max(...transactions.map(t => parseInt(t.id.substring(1)))) + 1).toString();
+    const newId = 't' + (Math.max(0, ...transactions.map(t => parseInt(t.id.substring(1)))) + 1).toString();
     transactions.unshift({ ...newTransaction, id: newId });
+    window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
 export function updateTransaction(updatedTransaction: Transaction): void {
     const index = transactions.findIndex(t => t.id === updatedTransaction.id);
     if (index !== -1) {
         transactions[index] = updatedTransaction;
+        window.dispatchEvent(new Event('transactionsUpdated'));
     } else {
         console.error(`Transaction with id ${updatedTransaction.id} not found.`);
     }
@@ -20,6 +22,7 @@ export function deleteTransaction(transactionId: string): void {
     const index = transactions.findIndex(t => t.id === transactionId);
     if (index !== -1) {
         transactions.splice(index, 1);
+        window.dispatchEvent(new Event('transactionsUpdated'));
     } else {
         console.error(`Transaction with id ${transactionId} not found.`);
     }

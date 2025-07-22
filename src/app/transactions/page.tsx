@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { transactions, categories, wallets, type Transaction } from '@/lib/data';
+import { transactions as allTransactions, categories, wallets, type Transaction } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -39,6 +39,7 @@ import { cn } from '@/lib/utils';
 
 
 export default function TransactionsPage() {
+  const [transactions, setTransactions] = useState(allTransactions);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
@@ -50,6 +51,16 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
+
+    const handleTransactionsUpdate = () => {
+      setTransactions([...allTransactions]);
+    };
+
+    window.addEventListener('transactionsUpdated', handleTransactionsUpdate);
+
+    return () => {
+      window.removeEventListener('transactionsUpdated', handleTransactionsUpdate);
+    };
   }, []);
 
   const handleRowClick = (transaction: Transaction) => {
@@ -78,7 +89,7 @@ export default function TransactionsPage() {
 
         return searchMatches && categoryFilterMatch && walletFilterMatch && dateFilterMatch;
     });
-  }, [searchQuery, selectedCategories, walletFilter, dateRange]);
+  }, [searchQuery, selectedCategories, walletFilter, dateRange, transactions]);
 
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
   

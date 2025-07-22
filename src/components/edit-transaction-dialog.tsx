@@ -70,7 +70,7 @@ export function EditTransactionDialog({
   const [wallet, setWallet] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [transactionCurrency, setTransactionCurrency] = useState(getDefaultCurrency());
+  const [transactionCurrency, setTransactionCurrency] = useState('');
   const [isConverting, setIsConverting] = useState(false);
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('');
@@ -118,14 +118,14 @@ export function EditTransactionDialog({
   };
   
   const handleAmountBlur = () => {
-    if (originalAmount && transactionCurrency && defaultCurrency) {
-      convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
+    if (originalAmount) {
+       convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
     }
   };
 
   const handleCurrencyChange = (newCurrency: string) => {
     setTransactionCurrency(newCurrency);
-    if (originalAmount && defaultCurrency) {
+    if (originalAmount) {
       convertAmount(Number(originalAmount), newCurrency, defaultCurrency);
     }
   };
@@ -148,18 +148,14 @@ export function EditTransactionDialog({
       const savedAmount = transaction.amount;
       // In a real app with more complex data, you'd store originalAmount and originalCurrency.
       // For this mock, we assume the saved amount in default currency is the "original" and let the user adjust.
-      setOriginalAmount(savedAmount);
-      setAmount(savedAmount);
       
-      if (travelMode.isActive && travelMode.currency) {
-          setTransactionCurrency(travelMode.currency);
-          // When opening an old transaction in travel mode, we should ideally convert its default currency value
-          // back to the travel currency for display. This is complex without storing original values.
-          // For now, we'll just set the currency dropdown and the user can re-enter the amount in travel currency if needed.
-      } else {
-          // Not in travel mode, set currency to default as it was saved in default
-          setTransactionCurrency(currentDefaultCurrency);
-      }
+      setAmount(savedAmount);
+      setTransactionCurrency(transaction.currency);
+      // We set originalAmount to the amount in the transaction's currency.
+      // Since we save everything in default, this should be the same.
+      // If we were to store original currency, this logic would need to change.
+      setOriginalAmount(transaction.amount);
+
 
     }
   }, [transaction]);
