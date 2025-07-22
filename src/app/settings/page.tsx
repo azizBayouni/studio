@@ -1,3 +1,7 @@
+
+'use client';
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -18,8 +22,21 @@ import {
 } from "@/components/ui/select"
 import { currencies } from "@/lib/data"
 import { FileUp, Download } from "lucide-react"
+import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
+  const [defaultCurrencyValue, setDefaultCurrencyValue] = useState(getDefaultCurrency());
+  const { toast } = useToast();
+
+  const handleSaveCurrency = () => {
+    setDefaultCurrency(defaultCurrencyValue);
+    toast({
+      title: "Settings Saved",
+      description: `Default currency set to ${defaultCurrencyValue}.`,
+    });
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center justify-between space-y-2">
@@ -59,7 +76,7 @@ export default function SettingsPage() {
           <CardContent>
             <div className="space-y-2">
               <Label htmlFor="default-currency">Default Currency</Label>
-              <Select defaultValue="USD">
+              <Select value={defaultCurrencyValue} onValueChange={setDefaultCurrencyValue}>
                 <SelectTrigger className="w-full md:w-1/3">
                   <SelectValue placeholder="Select a currency" />
                 </SelectTrigger>
@@ -70,7 +87,7 @@ export default function SettingsPage() {
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
-            <Button>Save</Button>
+            <Button onClick={handleSaveCurrency}>Save</Button>
           </CardFooter>
         </Card>
 
