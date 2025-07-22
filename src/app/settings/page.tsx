@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -28,10 +28,16 @@ import { convertAllTransactions, convertAllWallets, convertAllDebts } from "@/se
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 
 export default function SettingsPage() {
-  const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState(getDefaultCurrency());
-  const [selectedCurrency, setSelectedCurrency] = useState(currentDefaultCurrency);
+  const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
+  const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const initialCurrency = getDefaultCurrency();
+    setCurrentDefaultCurrency(initialCurrency);
+    setSelectedCurrency(initialCurrency);
+  }, []);
 
   const handleSaveClick = () => {
     if (selectedCurrency !== currentDefaultCurrency) {
