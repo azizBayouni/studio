@@ -20,12 +20,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Paperclip } from 'lucide-react';
+import { PlusCircle, Paperclip, Calendar as CalendarIcon } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { MultiSelect } from '@/components/ui/multi-select';
+import { DateRange } from 'react-day-picker';
+import {
+  startOfWeek,
+  endOfWeek,
+  subWeeks,
+  startOfMonth,
+  endOfMonth,
+  subMonths,
+  startOfYear,
+  endOfYear,
+  subYears,
+  parseISO,
+  isWithinInterval,
+  format,
+} from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+
 
 export default function TransactionsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -35,8 +61,9 @@ export default function TransactionsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [walletFilter, setWalletFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('all-time');
 
-  // This effect ensures the component re-renders when the currency changes.
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
@@ -53,6 +80,43 @@ export default function TransactionsPage() {
     }).format(amount);
   };
 
+  const setPeriod = (period: string) => {
+    setSelectedPeriod(period);
+    const now = new Date();
+    let range: DateRange | undefined = undefined;
+
+    switch (period) {
+      case 'this-week':
+        range = { from: startOfWeek(now), to: endOfWeek(now) };
+        break;
+      case 'last-week':
+        const lastWeekStart = startOfWeek(subWeeks(now, 1));
+        const lastWeekEnd = endOfWeek(subWeeks(now, 1));
+        range = { from: lastWeekStart, to: lastWeekEnd };
+        break;
+      case 'this-month':
+        range = { from: startOfMonth(now), to: endOfMonth(now) };
+        break;
+      case 'last-month':
+        const lastMonthStart = startOfMonth(subMonths(now, 1));
+        const lastMonthEnd = endOfMonth(subMonths(now, 1));
+        range = { from: lastMonthStart, to: lastMonthEnd };
+        break;
+      case 'this-year':
+        range = { from: startOfYear(now), to: endOfYear(now) };
+        break;
+      case 'last-year':
+         const lastYearStart = startOfYear(subYears(now, 1));
+         const lastYearEnd = endOfYear(subYears(now, 1));
+         range = { from: lastYearStart, to: lastYearEnd };
+        break;
+      case 'all-time':
+        range = undefined;
+        break;
+    }
+    setDateRange(range);
+  };
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
         const searchLower = searchQuery.toLowerCase();
@@ -63,11 +127,18 @@ export default function TransactionsPage() {
         const categoryFilterMatch = selectedCategories.length === 0 || selectedCategories.includes(transaction.category);
         const walletFilterMatch = walletFilter === 'all' || transaction.wallet === walletFilter;
 
-        return searchMatches && categoryFilterMatch && walletFilterMatch;
+        const dateFilterMatch = !dateRange || (dateRange.from && isWithinInterval(parseISO(transaction.date), { start: dateRange.from, end: dateRange.to || dateRange.from }));
+
+        return searchMatches && categoryFilterMatch && walletFilterMatch && dateFilterMatch;
     });
-  }, [searchQuery, selectedCategories, walletFilter]);
+  }, [searchQuery, selectedCategories, walletFilter, dateRange]);
 
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
+  
+  const handleCustomDateChange = (range: DateRange | undefined) => {
+    setDateRange(range);
+    setSelectedPeriod('custom');
+  }
 
   return (
     <>
@@ -106,6 +177,47 @@ export default function TransactionsPage() {
                   ))}
                 </SelectContent>
               </Select>
+               <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="md:w-[180px] justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <span>
+                            {selectedPeriod === 'custom' && dateRange?.from
+                                ? dateRange.to
+                                    ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
+                                    : format(dateRange.from, "LLL dd, y")
+                                : selectedPeriod.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setPeriod('all-time')}>All time</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('this-week')}>This Week</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('last-week')}>Last Week</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('this-month')}>This Month</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('last-month')}>Last Month</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('this-year')}>This Year</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setPeriod('last-year')}>Last Year</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                Custom Range...
+                            </DropdownMenuItem>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={handleCustomDateChange}
+                            numberOfMonths={2}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                </DropdownMenuContent>
+              </DropdownMenu>
           </div>
           <div className="rounded-md border">
             <Table>
