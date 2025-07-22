@@ -316,7 +316,6 @@ export function EditTransactionDialog({
                 <Select
                   value={transactionCurrency}
                   onValueChange={setTransactionCurrency}
-                  disabled={!isTravelMode}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="Currency" />

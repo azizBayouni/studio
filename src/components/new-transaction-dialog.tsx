@@ -259,7 +259,7 @@ export function NewTransactionDialog({
                 <Label htmlFor="amount">Amount</Label>
                 <div className="flex items-center gap-2">
                     <Input id="amount" type="number" placeholder="0.00" value={originalAmount} onChange={(e) => handleAmountChange(e.target.value)} onBlur={handleAmountBlur} required className="flex-1" disabled={isConverting} />
-                     <Select value={transactionCurrency} onValueChange={setTransactionCurrency} disabled={!isTravelMode}>
+                     <Select value={transactionCurrency} onValueChange={setTransactionCurrency}>
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Currency" />
                         </SelectTrigger>
