@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { wallets, type Wallet } from '@/lib/data';
-import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, MoreVertical, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EditWalletDialog } from '@/components/edit-wallet-dialog';
 import { AddWalletDialog } from '@/components/add-wallet-dialog';
-import { deleteWallet } from '@/services/wallet-service';
+import { deleteWallet, getDefaultWallet, setDefaultWallet } from '@/services/wallet-service';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -42,7 +42,12 @@ export default function WalletsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [defaultWalletId, setDefaultWalletId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setDefaultWalletId(getDefaultWallet());
+  }, []);
 
   const handleEditClick = (wallet: Wallet) => {
     setSelectedWallet(wallet);
@@ -56,6 +61,15 @@ export default function WalletsPage() {
         description: "The wallet has been successfully deleted.",
         variant: "destructive"
     })
+  };
+
+  const handleSetDefault = (walletId: string) => {
+    setDefaultWallet(walletId);
+    setDefaultWalletId(walletId);
+    toast({
+      title: "Default Wallet Set",
+      description: "This wallet will be pre-selected for new transactions.",
+    });
   };
 
   return (
@@ -96,6 +110,10 @@ export default function WalletsPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                     <DropdownMenuItem onClick={() => handleSetDefault(wallet.id)} disabled={defaultWalletId === wallet.id}>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        {defaultWalletId === wallet.id ? 'Default Wallet' : 'Set as Default'}
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleEditClick(wallet)}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit

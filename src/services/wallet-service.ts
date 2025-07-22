@@ -1,6 +1,8 @@
 
 import { wallets, type Wallet } from '@/lib/data';
 
+const WALLET_STORAGE_KEY = 'expensewise-default-wallet';
+
 export function addWallet(newWallet: Omit<Wallet, 'id' | 'balance'>): void {
     const newId = 'w' + (Math.max(...wallets.map(w => parseInt(w.id.substring(1)))) + 1).toString();
     wallets.push({ ...newWallet, id: newId, balance: 0 });
@@ -19,7 +21,31 @@ export function deleteWallet(walletId: string): void {
     const index = wallets.findIndex((w) => w.id === walletId);
     if (index !== -1) {
         wallets.splice(index, 1);
+        if (getDefaultWallet() === walletId) {
+            clearDefaultWallet();
+        }
     } else {
         console.error(`Wallet with id ${walletId} not found.`);
     }
+}
+
+export function setDefaultWallet(walletId: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(WALLET_STORAGE_KEY, walletId);
+    window.dispatchEvent(new Event('defaultWalletChanged'));
+  }
+}
+
+export function getDefaultWallet(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem(WALLET_STORAGE_KEY);
+  }
+  return null;
+}
+
+export function clearDefaultWallet(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(WALLET_STORAGE_KEY);
+    window.dispatchEvent(new Event('defaultWalletChanged'));
+  }
 }

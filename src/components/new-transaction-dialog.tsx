@@ -39,6 +39,7 @@ import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { getDefaultWallet } from '@/services/wallet-service';
 
 interface NewTransactionDialogProps {
   isOpen: boolean;
@@ -112,7 +113,11 @@ export function NewTransactionDialog({
     setOriginalAmount('');
     setDescription('');
     setCategory('');
-    setWallet('');
+    
+    const defaultWalletId = getDefaultWallet();
+    const defaultWallet = wallets.find(w => w.id === defaultWalletId);
+    setWallet(defaultWallet ? defaultWallet.name : '');
+
     setDate(new Date());
     setAttachments([]);
 
