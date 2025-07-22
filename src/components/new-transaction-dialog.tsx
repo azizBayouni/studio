@@ -31,7 +31,7 @@ import { CalendarIcon, Paperclip, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { categories, wallets, currencies } from '@/lib/data';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { addTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
@@ -63,7 +63,44 @@ export function NewTransactionDialog({
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const { toast } = useToast();
 
-  const resetForm = () => {
+  const convertAmount = useCallback(async (
+    amountToConvert: number,
+    from: string,
+    to: string
+  ) => {
+    if (!amountToConvert || !to || from === to) {
+        setAmount(amountToConvert);
+        return;
+    }
+    setIsConverting(true);
+    try {
+      const result = await autoCurrencyExchange({
+        amount: amountToConvert,
+        fromCurrency: from,
+        toCurrency: to,
+      });
+      setAmount(result.convertedAmount);
+       if (from !== to) {
+        toast({
+            title: 'Amount Converted',
+            description: `${amountToConvert.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${from} is ≈ ${result.convertedAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${to}.`,
+        });
+      }
+    } catch (error) {
+      console.error('Currency conversion failed:', error);
+      toast({
+        title: 'Conversion Failed',
+        description: 'Could not convert currency. Please try again.',
+        variant: 'destructive',
+      });
+       setAmount(amountToConvert); // Fallback to original amount on error
+    } finally {
+      setIsConverting(false);
+    }
+  }, [toast]);
+
+
+  const resetForm = useCallback(() => {
     const currentDefaultCurrency = getDefaultCurrency();
     setDefaultCurrency(currentDefaultCurrency);
 
@@ -84,68 +121,37 @@ export function NewTransactionDialog({
     } else {
       setTransactionCurrency(currentDefaultCurrency);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       resetForm();
     }
-  }, [isOpen]);
-
-  const convertAmount = async (
-    amountToConvert: number,
-    from: string,
-    to: string
-  ) => {
-    if (!amountToConvert || !to || from === to) {
-        setAmount(amountToConvert);
-        return;
-    }
-    setIsConverting(true);
-    try {
-      const result = await autoCurrencyExchange({
-        amount: amountToConvert,
-        fromCurrency: from,
-        toCurrency: to,
-      });
-      setAmount(result.convertedAmount);
-      toast({
-        title: 'Amount Converted',
-        description: `${amountToConvert.toFixed(
-          2
-        )} ${from} is approximately ${result.convertedAmount.toFixed(2)} ${to}.`,
-      });
-    } catch (error) {
-      console.error('Currency conversion failed:', error);
-      toast({
-        title: 'Conversion Failed',
-        description: 'Could not convert currency. Please try again.',
-        variant: 'destructive',
-      });
-       setAmount(amountToConvert); // Fallback to original amount on error
-    } finally {
-      setIsConverting(false);
-    }
-  };
-
-  const handleAmountBlur = async () => {
-    if (isTravelMode && originalAmount && transactionCurrency && defaultCurrency) {
-      await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
-    }
-  };
+  }, [isOpen, resetForm]);
 
   const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
     setOriginalAmount(numericValue);
-    if (!isTravelMode) {
-      setAmount(numericValue);
+  };
+
+  const handleAmountBlur = () => {
+    if (originalAmount && transactionCurrency && defaultCurrency) {
+      convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
     }
   };
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setTransactionCurrency(newCurrency);
+    if (originalAmount && defaultCurrency) {
+      convertAmount(Number(originalAmount), newCurrency, defaultCurrency);
+    }
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const finalAmount = isTravelMode ? amount : originalAmount;
+    const finalAmount = amount || originalAmount;
 
     if (!finalAmount || !category || !wallet || !date) {
         toast({
@@ -225,7 +231,7 @@ export function NewTransactionDialog({
               <Alert>
                 <AlertTitle>Travel Mode Active</AlertTitle>
                 <AlertDescription>
-                  Amounts are entered in {transactionCurrency} and will be saved in {defaultCurrency}.
+                  Amounts entered in {transactionCurrency} will be saved in {defaultCurrency}.
                 </AlertDescription>
               </Alert>
             )}
@@ -261,7 +267,7 @@ export function NewTransactionDialog({
                 <Label htmlFor="amount">Amount</Label>
                 <div className="flex items-center gap-2">
                     <Input id="amount" type="number" placeholder="0.00" value={originalAmount} onChange={(e) => handleAmountChange(e.target.value)} onBlur={handleAmountBlur} required className="flex-1" disabled={isConverting} />
-                     <Select value={transactionCurrency} onValueChange={setTransactionCurrency}>
+                     <Select value={transactionCurrency} onValueChange={handleCurrencyChange}>
                         <SelectTrigger className="w-32">
                             <SelectValue placeholder="Currency" />
                         </SelectTrigger>
@@ -270,7 +276,7 @@ export function NewTransactionDialog({
                         </SelectContent>
                     </Select>
                 </div>
-                 {isTravelMode && amount && (
+                 {amount && transactionCurrency !== defaultCurrency && (
                     <p className="text-sm text-muted-foreground">
                         Will be saved as ≈ {Number(amount).toLocaleString(undefined, { style: 'currency', currency: defaultCurrency })}
                     </p>
@@ -352,5 +358,3 @@ export function NewTransactionDialog({
     </Dialog>
   );
 }
-
-    

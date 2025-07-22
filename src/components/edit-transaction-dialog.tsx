@@ -76,22 +76,7 @@ export function EditTransactionDialog({
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const { toast } = useToast();
 
-  const handleAmountChange = (value: string) => {
-    const numericValue = value === '' ? '' : parseFloat(value);
-    setOriginalAmount(numericValue);
-    if (!isTravelMode) {
-      setAmount(numericValue);
-    }
-  };
-
-  const handleAmountBlur = async () => {
-    if (isTravelMode && originalAmount && transactionCurrency && defaultCurrency) {
-      await convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
-    }
-  };
-
-
-  const convertAmount = async (
+  const convertAmount = useCallback(async (
     amountToConvert: number,
     from: string,
     to: string
@@ -108,12 +93,12 @@ export function EditTransactionDialog({
         toCurrency: to,
       });
       setAmount(result.convertedAmount);
-      toast({
-        title: 'Amount Converted',
-        description: `${amountToConvert.toFixed(
-          2
-        )} ${from} is approximately ${result.convertedAmount.toFixed(2)} ${to}.`,
-      });
+      if (from !== to) {
+        toast({
+            title: 'Amount Converted',
+            description: `${amountToConvert.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${from} is ≈ ${result.convertedAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${to}.`,
+        });
+      }
     } catch (error) {
       console.error('Currency conversion failed:', error);
       toast({
@@ -125,8 +110,26 @@ export function EditTransactionDialog({
     } finally {
       setIsConverting(false);
     }
+  }, [toast]);
+
+  const handleAmountChange = (value: string) => {
+    const numericValue = value === '' ? '' : parseFloat(value);
+    setOriginalAmount(numericValue);
+  };
+  
+  const handleAmountBlur = () => {
+    if (originalAmount && transactionCurrency && defaultCurrency) {
+      convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
+    }
   };
 
+  const handleCurrencyChange = (newCurrency: string) => {
+    setTransactionCurrency(newCurrency);
+    if (originalAmount && defaultCurrency) {
+      convertAmount(Number(originalAmount), newCurrency, defaultCurrency);
+    }
+  };
+  
   const resetAndInitialize = useCallback(() => {
     const currentDefaultCurrency = getDefaultCurrency();
     setDefaultCurrency(currentDefaultCurrency);
@@ -143,22 +146,19 @@ export function EditTransactionDialog({
       setAttachments(transaction.attachments || []);
       
       const savedAmount = transaction.amount;
-      setAmount(savedAmount);
+      // In a real app with more complex data, you'd store originalAmount and originalCurrency.
+      // For this mock, we assume the saved amount in default currency is the "original" and let the user adjust.
       setOriginalAmount(savedAmount);
-
+      setAmount(savedAmount);
+      
       if (travelMode.isActive && travelMode.currency) {
-          // In travel mode, the transaction currency should be the travel currency
           setTransactionCurrency(travelMode.currency);
-          // If the edited transaction's currency is the default currency, we assume it was already converted.
-          // The `originalAmount` should be displayed in the travel currency.
-          // For this mock, we don't have the original pre-conversion amount,
-          // so we'll just set it to the saved amount and let the user re-enter if needed for re-conversion.
-          if (transaction.currency === currentDefaultCurrency) {
-            setOriginalAmount(savedAmount); // User might need to adjust this if they want to reconvert
-          }
+          // When opening an old transaction in travel mode, we should ideally convert its default currency value
+          // back to the travel currency for display. This is complex without storing original values.
+          // For now, we'll just set the currency dropdown and the user can re-enter the amount in travel currency if needed.
       } else {
-          // Not in travel mode, use the transaction's own currency
-          setTransactionCurrency(transaction.currency);
+          // Not in travel mode, set currency to default as it was saved in default
+          setTransactionCurrency(currentDefaultCurrency);
       }
 
     }
@@ -177,7 +177,7 @@ export function EditTransactionDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const finalAmount = isTravelMode ? amount : originalAmount;
+    const finalAmount = amount || originalAmount;
 
     if (!finalAmount || !category || !wallet || !date) {
         toast({
@@ -281,7 +281,7 @@ export function EditTransactionDialog({
               <Alert>
                 <AlertTitle>Travel Mode Active</AlertTitle>
                 <AlertDescription>
-                  Amounts are entered in {transactionCurrency} and will be saved in{' '}
+                  Amounts entered in {transactionCurrency} will be saved in{' '}
                   {defaultCurrency}.
                 </AlertDescription>
               </Alert>
@@ -330,7 +330,7 @@ export function EditTransactionDialog({
                 />
                 <Select
                   value={transactionCurrency}
-                  onValueChange={setTransactionCurrency}
+                  onValueChange={handleCurrencyChange}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="Currency" />
@@ -344,7 +344,7 @@ export function EditTransactionDialog({
                   </SelectContent>
                 </Select>
               </div>
-              {isTravelMode && amount && (
+              {amount && transactionCurrency !== defaultCurrency && (
                 <p className="text-sm text-muted-foreground">
                   Will be saved as ≈{' '}
                   {Number(amount).toLocaleString(undefined, {
@@ -463,5 +463,3 @@ export function EditTransactionDialog({
     </Dialog>
   );
 }
-
-    
