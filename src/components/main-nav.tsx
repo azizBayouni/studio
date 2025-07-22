@@ -18,6 +18,7 @@ import {
   Settings,
   LineChart,
   Landmark,
+  LayoutGrid,
 } from 'lucide-react';
 
 export function MainNav() {
@@ -26,6 +27,7 @@ export function MainNav() {
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
+    { href: '/categories', label: 'Categories', icon: LayoutGrid },
     { href: '/reports', label: 'Reports', icon: LineChart },
     { href: '/debts', label: 'Debts', icon: Users },
     { href: '/wallets', label: 'Wallets', icon: Wallet },
