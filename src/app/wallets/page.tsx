@@ -33,12 +33,14 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { EditWalletDialog } from '@/components/edit-wallet-dialog';
+import { AddWalletDialog } from '@/components/add-wallet-dialog';
 import { deleteWallet } from '@/services/wallet-service';
 import { useToast } from '@/hooks/use-toast';
 
 
 export default function WalletsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const { toast } = useToast();
 
@@ -67,7 +69,7 @@ export default function WalletsPage() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-              <Button>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Wallet
               </Button>
           </div>
@@ -136,6 +138,10 @@ export default function WalletsPage() {
         isOpen={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         wallet={selectedWallet}
+      />
+      <AddWalletDialog 
+        isOpen={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
       />
     </>
   );
