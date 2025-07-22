@@ -61,8 +61,6 @@ export function NewTransactionDialog({
   const selectedWalletCurrency = selectedWallet?.currency;
 
   useEffect(() => {
-    // When the wallet changes, or on initial load, set the transaction currency
-    // to match the wallet's currency.
     if (selectedWalletCurrency) {
       setTransactionCurrency(selectedWalletCurrency);
     }
@@ -90,7 +88,6 @@ export function NewTransactionDialog({
     const fromCurrency = newCurrency;
     const toCurrency = selectedWalletCurrency;
 
-    // Do nothing if there's no amount, no target currency, or if currencies are the same
     if (!originalAmount || !toCurrency || fromCurrency === toCurrency) {
         setTransactionCurrency(fromCurrency);
         return;
@@ -104,9 +101,7 @@ export function NewTransactionDialog({
             toCurrency: toCurrency,
         });
         
-        // Update the amount with the converted value
         setAmount(result.convertedAmount);
-        // Set the currency back to the wallet's currency
         setTransactionCurrency(toCurrency);
         
         toast({
@@ -116,7 +111,6 @@ export function NewTransactionDialog({
 
     } catch (error) {
         console.error("Currency conversion failed:", error);
-        // Revert to the wallet's currency on failure
         setTransactionCurrency(toCurrency);
         toast({
             title: "Conversion Failed",
