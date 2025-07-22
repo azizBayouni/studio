@@ -32,6 +32,7 @@ export type Transaction = {
   wallet: string;
   description: string;
   currency: string;
+  attachments?: File[];
 };
 
 export type Wallet = {
@@ -69,7 +70,7 @@ export const categories: Category[] = [
 ];
 
 export const transactions: Transaction[] = [
-  { id: 't1', date: '2024-07-20', amount: 15.50, type: 'expense', category: 'Restaurants', wallet: 'Main Wallet', description: 'Lunch with colleagues', currency: 'USD' },
+  { id: 't1', date: '2024-07-20', amount: 15.50, type: 'expense', category: 'Restaurants', wallet: 'Main Wallet', description: 'Lunch with colleagues', currency: 'USD', attachments: [] },
   { id: 't2', date: '2024-07-20', amount: 80.00, type: 'expense', category: 'Groceries', wallet: 'Main Wallet', description: 'Weekly grocery shopping', currency: 'USD' },
   { id: 't3', date: '2024-07-19', amount: 2500, type: 'income', category: 'Salary', wallet: 'Main Wallet', description: 'Monthly salary', currency: 'USD' },
   { id: 't4', date: '2024-07-18', amount: 120.00, type: 'expense', category: 'Clothing', wallet: 'Credit Card', description: 'New shoes', currency: 'USD' },

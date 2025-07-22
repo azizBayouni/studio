@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Paperclip, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { categories, wallets } from '@/lib/data';
@@ -42,6 +43,17 @@ export function NewTransactionDialog({
   onOpenChange,
 }: NewTransactionDialogProps) {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [attachments, setAttachments] = useState<File[]>([]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   const renderCategoryOptions = () => {
     const parentCategories = categories.filter(c => c.parentId === null);
@@ -144,6 +156,28 @@ export function NewTransactionDialog({
                     />
                   </PopoverContent>
                 </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="attachments">Attachments</Label>
+              <Button asChild variant="outline" className="w-full">
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Add Attachments
+                </label>
+              </Button>
+              <Input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
+              {attachments.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  {attachments.map((file, index) => (
+                    <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                      <span className="truncate">{file.name}</span>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
         </div>
         <DialogFooter>

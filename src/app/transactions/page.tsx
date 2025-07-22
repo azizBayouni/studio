@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Paperclip } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 
 export default function TransactionsPage() {
@@ -82,7 +82,12 @@ export default function TransactionsPage() {
                 {transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>{transaction.date}</TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
+                    <TableCell className="font-medium flex items-center gap-2">
+                      {transaction.description}
+                      {transaction.attachments && transaction.attachments.length > 0 && (
+                        <Paperclip className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{transaction.category}</Badge>
                     </TableCell>
