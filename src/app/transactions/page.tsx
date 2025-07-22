@@ -20,13 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Paperclip, Calendar as CalendarIcon } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
@@ -35,15 +28,6 @@ import { getDefaultCurrency } from '@/services/settings-service';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { DateRange } from 'react-day-picker';
 import {
-  startOfWeek,
-  endOfWeek,
-  subWeeks,
-  startOfMonth,
-  endOfMonth,
-  subMonths,
-  startOfYear,
-  endOfYear,
-  subYears,
   parseISO,
   isWithinInterval,
   format,
@@ -63,9 +47,6 @@ export default function TransactionsPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [walletFilter, setWalletFilter] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [selectedPeriod, setSelectedPeriod] = useState<string>('all-time');
-  const [isCustomRangePopoverOpen, setIsCustomRangePopoverOpen] = useState(false);
-
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -81,43 +62,6 @@ export default function TransactionsPage() {
       style: 'currency',
       currency: currencyCode,
     }).format(amount);
-  };
-
-  const setPeriod = (period: string) => {
-    setSelectedPeriod(period);
-    const now = new Date();
-    let range: DateRange | undefined = undefined;
-
-    switch (period) {
-      case 'this-week':
-        range = { from: startOfWeek(now), to: endOfWeek(now) };
-        break;
-      case 'last-week':
-        const lastWeekStart = startOfWeek(subWeeks(now, 1));
-        const lastWeekEnd = endOfWeek(subWeeks(now, 1));
-        range = { from: lastWeekStart, to: lastWeekEnd };
-        break;
-      case 'this-month':
-        range = { from: startOfMonth(now), to: endOfMonth(now) };
-        break;
-      case 'last-month':
-        const lastMonthStart = startOfMonth(subMonths(now, 1));
-        const lastMonthEnd = endOfMonth(subMonths(now, 1));
-        range = { from: lastMonthStart, to: lastMonthEnd };
-        break;
-      case 'this-year':
-        range = { from: startOfYear(now), to: endOfYear(now) };
-        break;
-      case 'last-year':
-         const lastYearStart = startOfYear(subYears(now, 1));
-         const lastYearEnd = endOfYear(subYears(now, 1));
-         range = { from: lastYearStart, to: lastYearEnd };
-        break;
-      case 'all-time':
-        range = undefined;
-        break;
-    }
-    setDateRange(range);
   };
 
   const filteredTransactions = useMemo(() => {
@@ -138,14 +82,6 @@ export default function TransactionsPage() {
 
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
   
-  const handleCustomDateChange = (range: DateRange | undefined) => {
-    setDateRange(range);
-    setSelectedPeriod('custom');
-    if (range?.from && range?.to) {
-        setIsCustomRangePopoverOpen(false);
-    }
-  }
-
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -183,47 +119,42 @@ export default function TransactionsPage() {
                   ))}
                 </SelectContent>
               </Select>
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="md:w-[180px] justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        <span>
-                            {selectedPeriod === 'custom' && dateRange?.from
-                                ? dateRange.to
-                                    ? `${format(dateRange.from, "LLL dd, y")} - ${format(dateRange.to, "LLL dd, y")}`
-                                    : format(dateRange.from, "LLL dd, y")
-                                : selectedPeriod.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                        </span>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setPeriod('all-time')}>All time</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('this-week')}>This Week</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('last-week')}>Last Week</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('this-month')}>This Month</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('last-month')}>Last Month</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('this-year')}>This Year</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setPeriod('last-year')}>Last Year</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                     <Popover open={isCustomRangePopoverOpen} onOpenChange={setIsCustomRangePopoverOpen}>
-                        <PopoverTrigger asChild>
-                             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                Custom Range...
-                            </DropdownMenuItem>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={dateRange?.from}
-                            selected={dateRange}
-                            onSelect={handleCustomDateChange}
-                            numberOfMonths={2}
-                            />
-                        </PopoverContent>
-                    </Popover>
-                </DropdownMenuContent>
-              </DropdownMenu>
+               <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={'outline'}
+                    className={cn(
+                      'w-full md:w-auto justify-start text-left font-normal',
+                      !dateRange && 'text-muted-foreground'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, 'LLL dd, y')} -{' '}
+                          {format(dateRange.to, 'LLL dd, y')}
+                        </>
+                      ) : (
+                        format(dateRange.from, 'LLL dd, y')
+                      )
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange?.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
           </div>
           <div className="rounded-md border">
             <Table>
