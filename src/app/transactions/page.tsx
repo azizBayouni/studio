@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { transactions, categories, wallets } from '@/lib/data';
+import { transactions, categories, wallets, type Transaction } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -23,9 +23,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { PlusCircle, Paperclip } from 'lucide-react';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
+import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
 
 export default function TransactionsPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+  const handleRowClick = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditDialogOpen(true);
+  };
 
   return (
     <>
@@ -38,7 +46,7 @@ export default function TransactionsPage() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Transaction
               </Button>
           </div>
@@ -80,7 +88,7 @@ export default function TransactionsPage() {
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
+                  <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
                     <TableCell>{transaction.date}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
                       {transaction.description}
@@ -102,7 +110,12 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
-      <NewTransactionDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <NewTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <EditTransactionDialog 
+        isOpen={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        transaction={selectedTransaction}
+      />
     </>
   );
 }
