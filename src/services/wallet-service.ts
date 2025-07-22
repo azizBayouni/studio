@@ -9,3 +9,12 @@ export function updateWallet(updatedWallet: Wallet): void {
     console.error(`Wallet with id ${updatedWallet.id} not found.`);
   }
 }
+
+export function deleteWallet(walletId: string): void {
+    const index = wallets.findIndex((w) => w.id === walletId);
+    if (index !== -1) {
+        wallets.splice(index, 1);
+    } else {
+        console.error(`Wallet with id ${walletId} not found.`);
+    }
+}
