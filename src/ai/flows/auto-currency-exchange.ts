@@ -40,16 +40,31 @@ const getExchangeRate = ai.defineTool(
   async input => {
     // This is a placeholder implementation. In a real application, this would
     // call an external API or database to get the current exchange rate.
-    // For demonstration purposes, we'll just return a fixed rate.
+    // For demonstration purposes, we'll use a fixed set of more realistic rates.
     console.log(`Getting exchange rate from ${input.fromCurrency} to ${input.toCurrency}`);
-    if (input.fromCurrency === 'USD' && input.toCurrency === 'EUR') {
-      return 0.9;
-    } else if (input.fromCurrency === 'EUR' && input.toCurrency === 'USD') {
-      return 1.1;
-    } else if (input.fromCurrency === input.toCurrency) {
-      return 1;
+    
+    const rates: {[key: string]: {[key: string]: number}} = {
+      USD: { EUR: 0.93, JPY: 157.5, GBP: 0.79, AUD: 1.5, CAD: 1.37, CHF: 0.9, CNY: 7.25, USD: 1 },
+      EUR: { USD: 1.08, JPY: 169.5, GBP: 0.85, AUD: 1.62, CAD: 1.47, CHF: 0.97, CNY: 7.8, EUR: 1 },
+      GBP: { USD: 1.27, JPY: 199.5, EUR: 1.18, AUD: 1.9, CAD: 1.74, CHF: 1.14, CNY: 9.2, GBP: 1 },
+    };
+
+    const fromRate = rates[input.fromCurrency];
+    if (fromRate && fromRate[input.toCurrency]) {
+      return fromRate[input.toCurrency];
+    }
+    
+    // Fallback for inverse conversion if direct rate isn't defined
+    const toRate = rates[input.toCurrency];
+    if (toRate && toRate[input.fromCurrency]) {
+      return 1 / toRate[input.fromCurrency];
+    }
+    
+    // Default rate if no specific path is found
+    if (input.fromCurrency === input.toCurrency) {
+        return 1;
     } else {
-      return 1.05; // A default exchange rate
+        return 1.05;
     }
   }
 );
