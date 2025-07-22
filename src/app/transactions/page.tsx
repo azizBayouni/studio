@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -31,6 +31,9 @@ export default function TransactionsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [walletFilter, setWalletFilter] = useState('all');
 
   // This effect ensures the component re-renders when the currency changes.
   useEffect(() => {
@@ -48,6 +51,20 @@ export default function TransactionsPage() {
       currency: currencyCode,
     }).format(amount);
   };
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(transaction => {
+        const searchLower = searchQuery.toLowerCase();
+        const descriptionMatch = transaction.description?.toLowerCase().includes(searchLower) || false;
+        const categoryMatch = transaction.category.toLowerCase().includes(searchLower);
+        const searchMatches = descriptionMatch || categoryMatch;
+
+        const categoryFilterMatch = categoryFilter === 'all' || transaction.category === categoryFilter;
+        const walletFilterMatch = walletFilter === 'all' || transaction.wallet === walletFilter;
+
+        return searchMatches && categoryFilterMatch && walletFilterMatch;
+    });
+  }, [searchQuery, categoryFilter, walletFilter]);
 
   return (
     <>
@@ -67,22 +84,24 @@ export default function TransactionsPage() {
         </div>
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4">
-              <Input placeholder="Filter by description..." className="max-w-sm" />
-              <Select>
+              <Input placeholder="Search by description or category..." className="max-w-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="md:w-[180px]">
                   <SelectValue placeholder="Filter by category" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.filter(c => c.parentId === null).map((category) => (
                       <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Select>
+              <Select value={walletFilter} onValueChange={setWalletFilter}>
                 <SelectTrigger className="md:w-[180px]">
                   <SelectValue placeholder="Filter by wallet" />
                 </SelectTrigger>
                 <SelectContent>
+                   <SelectItem value="all">All Wallets</SelectItem>
                   {wallets.map((wallet) => (
                       <SelectItem key={wallet.id} value={wallet.name}>{wallet.name}</SelectItem>
                   ))}
@@ -101,7 +120,7 @@ export default function TransactionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction) => (
+                {filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
                     <TableCell>{transaction.date}</TableCell>
                     <TableCell className="font-medium flex items-center gap-2">
