@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -127,17 +128,20 @@ export default function SettingsPage() {
 
   const handleExport = () => {
     // 1. Prepare Transaction Data
-    const transactionData = allTransactions.map((t, index) => ({
-        'No.': index + 1,
-        'Category': t.category,
-        'Amount': t.amount,
-        'Note': t.description,
-        'Wallet': t.wallet,
-        'Currency': t.currency,
-        'Date': t.date,
-        'Event': '', // This field is not in the model yet
-        'Exclude Report': '', // This field is not in the model yet
-    }));
+    const transactionData = allTransactions.map((t, index) => {
+        const eventName = t.eventId ? allEvents.find(e => e.id === t.eventId)?.name || '' : '';
+        return {
+            'No.': index + 1,
+            'Category': t.category,
+            'Amount': t.amount,
+            'Note': t.description,
+            'Wallet': t.wallet,
+            'Currency': t.currency,
+            'Date': t.date,
+            'Event': eventName,
+            'Exclude Report': '', // This field is not in the model yet
+        };
+    });
 
     // 2. Prepare Category Data
     const categoryData = allCategories.map(c => ({
@@ -199,6 +203,8 @@ export default function SettingsPage() {
           const [no, category, amountStr, note, wallet, currency, dateString, eventName, excludeReport] = columns;
           
           const categoryObj = allCategories.find(c => c.name.toLowerCase() === category.toLowerCase());
+          const eventObj = eventName ? allEvents.find(ev => ev.name.toLowerCase() === eventName.toLowerCase()) : null;
+
 
           // --- VALIDATION ---
           if (!categoryObj) {
@@ -210,7 +216,7 @@ export default function SettingsPage() {
           if (currency && !currencyCodes.has(currency.toLowerCase())) {
              throw new Error(`Error on row ${rowNum}: Currency '${currency}' not found.`);
           }
-          if (eventName && !eventNames.has(eventName.toLowerCase())) {
+          if (eventName && !eventObj) {
              throw new Error(`Error on row ${rowNum}: Event '${eventName}' not found.`);
           }
 
@@ -244,6 +250,7 @@ export default function SettingsPage() {
             wallet: wallet,
             currency: currency || getDefaultCurrency(),
             date: dateValue.toISOString().split('T')[0],
+            eventId: eventObj?.id,
           };
           newTransactions.push(newTransaction);
         });

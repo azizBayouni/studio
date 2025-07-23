@@ -41,7 +41,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { categories, wallets, currencies } from '@/lib/data';
+import { categories, wallets, currencies, events } from '@/lib/data';
 import { useState, useEffect, useCallback } from 'react';
 import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
@@ -74,6 +74,7 @@ export function EditTransactionDialog({
   const [isConverting, setIsConverting] = useState(false);
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('');
+  const [eventId, setEventId] = useState<string | undefined>(undefined);
   const { toast } = useToast();
 
   const convertAmount = useCallback(async (
@@ -144,6 +145,7 @@ export function EditTransactionDialog({
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
+      setEventId(transaction.eventId);
       
       const savedAmount = transaction.amount;
       // In a real app with more complex data, you'd store originalAmount and originalCurrency.
@@ -194,6 +196,7 @@ export function EditTransactionDialog({
         date: format(date, 'yyyy-MM-dd'),
         currency: defaultCurrency, // Always save in default currency
         attachments,
+        eventId: eventId,
     };
 
     updateTransaction(updatedTransaction);
@@ -362,6 +365,22 @@ export function EditTransactionDialog({
                 </SelectTrigger>
                 <SelectContent>{renderCategoryOptions()}</SelectContent>
                 </Select>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="event">Event (Optional)</Label>
+              <Select value={eventId} onValueChange={(value) => setEventId(value === 'none' ? undefined : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an event" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {events.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>

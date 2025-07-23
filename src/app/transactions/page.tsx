@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { transactions as allTransactions, categories, wallets, type Transaction } from '@/lib/data';
+import { transactions as allTransactions, categories, wallets, events, type Transaction } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -92,6 +93,10 @@ export default function TransactionsPage() {
   }, [searchQuery, selectedCategories, walletFilter, dateRange, transactions]);
 
   const categoryOptions = categories.map(c => ({ value: c.name, label: c.name }));
+  const getEventName = (eventId?: string) => {
+    if (!eventId) return '-';
+    return events.find(e => e.id === eventId)?.name || '-';
+  };
   
   return (
     <>
@@ -175,6 +180,7 @@ export default function TransactionsPage() {
                   <TableHead>Description</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Wallet</TableHead>
+                  <TableHead>Event</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -192,6 +198,7 @@ export default function TransactionsPage() {
                       <Badge variant="outline">{transaction.category}</Badge>
                     </TableCell>
                     <TableCell>{transaction.wallet}</TableCell>
+                    <TableCell>{getEventName(transaction.eventId)}</TableCell>
                     <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : ''}`}>
                       {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
                     </TableCell>

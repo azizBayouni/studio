@@ -1,4 +1,5 @@
 
+
 import { transactions, wallets, debts, type Transaction, type Wallet, type Debt } from '@/lib/data';
 import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 
