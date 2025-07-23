@@ -6,30 +6,18 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { transactions, categories, wallets as allWallets } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
 import { getDefaultCurrency } from '@/services/settings-service';
 import type { DateRange } from 'react-day-picker';
-import { parseISO, isWithinInterval, endOfDay, startOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, lightFormat } from 'date-fns';
+import { parseISO, isWithinInterval, endOfDay, startOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter } from 'date-fns';
 import { ArrowRight, CalendarIcon, HelpCircle, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { Progress } from '@/components/ui/progress';
 import { CategoryDonutChart } from '@/components/category-donut-chart';
+import { TimeRangePicker } from '@/components/time-range-picker';
 
 export default function ReportsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
@@ -38,7 +26,7 @@ export default function ReportsPage() {
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
   const [timeRange, setTimeRange] = useState<string>('this-month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -47,11 +35,19 @@ export default function ReportsPage() {
   const dateRange = useMemo(() => {
     const now = new Date();
     switch (timeRange) {
+      case 'day':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'week':
+        return { from: startOfWeek(now), to: endOfWeek(now) };
       case 'last-month':
         const lastMonth = subMonths(now, 1);
         return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
-      case 'this-year':
+      case 'quarter':
+        return { from: startOfQuarter(now), to: endOfQuarter(now) };
+      case 'year':
         return { from: startOfYear(now), to: endOfYear(now) };
+      case 'all':
+        return { from: undefined, to: undefined };
       case 'custom':
         return customDateRange;
       case 'this-month':
@@ -65,7 +61,11 @@ export default function ReportsPage() {
       if (t.excludeFromReport) return false;
 
       const walletFilterMatch = selectedWallets.length === 0 || selectedWallets.includes(t.wallet);
-      const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(parseISO(t.date), { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) });
+      
+      const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(
+          parseISO(t.date), 
+          { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) }
+      );
       
       return walletFilterMatch && dateFilterMatch;
     });
@@ -128,36 +128,16 @@ export default function ReportsPage() {
     }));
   }, [reportableTransactions]);
 
-  const handleDateSelect = (range: DateRange | undefined) => {
-    setCustomDateRange(range);
-    if(range) {
-        setTimeRange('custom');
-    }
-    setIsPopoverOpen(false);
-  }
 
   return (
+    <>
     <div className="flex-1 space-y-4 p-4 md:p-6">
        <header className="space-y-1">
           <div className="flex items-center justify-between">
             <h2 className="text-sm text-muted-foreground">Balance</h2>
-             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-                <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <CalendarIcon className="h-5 w-5" />
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                        initialFocus
-                        mode="range"
-                        defaultMonth={dateRange?.from}
-                        selected={customDateRange}
-                        onSelect={handleDateSelect}
-                        numberOfMonths={2}
-                    />
-                </PopoverContent>
-            </Popover>
+            <Button variant="ghost" size="icon" onClick={() => setIsPickerOpen(true)}>
+                <CalendarIcon className="h-5 w-5" />
+            </Button>
           </div>
           <div className="flex items-center justify-between">
             <p className="text-2xl font-semibold">
@@ -178,19 +158,17 @@ export default function ReportsPage() {
             />
        </header>
 
-      <Tabs value={timeRange} onValueChange={setTimeRange} className="space-y-4">
-        <TabsList>
-            <TabsTrigger value="this-month">This Month</TabsTrigger>
-            <TabsTrigger value="last-month">Last Month</TabsTrigger>
-            <TabsTrigger value="this-year">This Year</TabsTrigger>
-            {timeRange === 'custom' && customDateRange && (
-                 <TabsTrigger value="custom">
-                    {customDateRange.from ? lightFormat(customDateRange.from, 'dd MMM') : ''}
-                    {customDateRange.to ? ` - ${lightFormat(customDateRange.to, 'dd MMM yy')}` : ''}
-                 </TabsTrigger>
-            )}
-        </TabsList>
-      </Tabs>
+      <div className="mt-4 flex items-center justify-center text-sm text-muted-foreground">
+        {dateRange?.from ? (
+            dateRange.to ? (
+                lightFormat(dateRange.from, 'dd MMM yyyy') + ' - ' + lightFormat(dateRange.to, 'dd MMM yyyy')
+            ) : (
+                lightFormat(dateRange.from, 'dd MMM yyyy')
+            )
+        ) : (
+          'All Time'
+        )}
+      </div>
       
       <div className="space-y-4">
         <div className="flex justify-between text-sm">
@@ -254,9 +232,14 @@ export default function ReportsPage() {
             )}
         </CardContent>
       </Card>
-
     </div>
+    <TimeRangePicker 
+      isOpen={isPickerOpen} 
+      onOpenChange={setIsPickerOpen}
+      value={timeRange}
+      onChange={setTimeRange}
+      onCustomDateChange={setCustomDateRange}
+    />
+    </>
   );
 }
-
-    
