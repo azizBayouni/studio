@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents } from "@/lib/data"
-import { FileUp, Download, UploadCloud } from "lucide-react"
+import { FileUp, Download, UploadCloud, Moon, Sun } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
@@ -30,7 +30,8 @@ import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-chang
 import { getUser, updateUser } from "@/services/user-service";
 import type { Transaction } from "@/lib/data";
 import * as XLSX from 'xlsx';
-import { parseISO } from "date-fns";
+import { useTheme } from "@/components/theme-provider";
+import { Switch } from "@/components/ui/switch";
 
 
 export default function SettingsPage() {
@@ -41,6 +42,7 @@ export default function SettingsPage() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const initialCurrency = getDefaultCurrency();
@@ -237,7 +239,7 @@ export default function SettingsPage() {
             throw new Error(`Date is missing on row ${rowNum}`);
           }
           // More robust date parsing
-          const dateValue = new Date(dateString.trim().replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3')); // Attempt to handle MM/DD vs DD/MM
+           const dateValue = new Date(dateString.trim().replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3')); // Attempt to handle MM/DD vs DD/MM
           if (isNaN(dateValue.getTime())) {
              throw new Error(`Invalid time value on row ${rowNum}: "${dateString}". Please use a standard format like YYYY-MM-DD or MM/DD/YYYY.`);
           }
@@ -310,6 +312,26 @@ export default function SettingsPage() {
             <CardFooter className="border-t px-6 py-4">
               <Button onClick={handleProfileSave}>Save</Button>
             </CardFooter>
+          </Card>
+
+           <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>Customize the look and feel of the application.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="theme-switch" className="flex items-center gap-2">
+                        {theme === 'dark' ? <Moon /> : <Sun />}
+                        <span>{theme === 'dark' ? 'Dark' : 'Light'} Mode</span>
+                    </Label>
+                    <Switch
+                        id="theme-switch"
+                        checked={theme === 'dark'}
+                        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                    />
+                </div>
+            </CardContent>
           </Card>
 
           <Card>
