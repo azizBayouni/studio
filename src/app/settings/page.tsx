@@ -149,6 +149,11 @@ export default function SettingsPage() {
           if (isNaN(amount)) {
             throw new Error(`Invalid amount on row ${index + 2}`);
           }
+
+          const dateValue = new Date(columns[6]);
+          if (isNaN(dateValue.getTime())) {
+            throw new Error(`Invalid time value on row ${index + 2}`);
+          }
           
           const newTransaction: Omit<Transaction, 'id'> = {
             category: columns[1],
@@ -157,7 +162,7 @@ export default function SettingsPage() {
             description: columns[3],
             wallet: columns[4],
             currency: columns[5] || getDefaultCurrency(),
-            date: new Date(columns[6]).toISOString().split('T')[0], // format to YYYY-MM-DD
+            date: dateValue.toISOString().split('T')[0], // format to YYYY-MM-DD
             // Event (columns[7]) and Exclude Report (columns[8]) are not used yet
           };
           newTransactions.push(newTransaction);
