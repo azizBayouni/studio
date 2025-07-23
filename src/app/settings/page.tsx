@@ -20,14 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currencies } from "@/lib/data"
-import { FileUp, Download } from "lucide-react"
+import { currencies, transactions as allTransactions, categories as allCategories } from "@/lib/data"
+import { FileUp, Download, UploadCloud } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 import { getUser, updateUser } from "@/services/user-service";
 import type { Transaction } from "@/lib/data";
+import * as XLSX from 'xlsx';
+
 
 export default function SettingsPage() {
   const [name, setName] = useState('');
@@ -122,6 +124,44 @@ export default function SettingsPage() {
     document.body.removeChild(link);
   };
 
+  const handleExport = () => {
+    // 1. Prepare Transaction Data
+    const transactionData = allTransactions.map((t, index) => ({
+        'No.': index + 1,
+        'Category': t.category,
+        'Amount': t.amount,
+        'Note': t.description,
+        'Wallet': t.wallet,
+        'Currency': t.currency,
+        'Date': t.date,
+        'Event': '', // This field is not in the model yet
+        'Exclude Report': '', // This field is not in the model yet
+    }));
+
+    // 2. Prepare Category Data
+    const categoryData = allCategories.map(c => ({
+        'category': c.name,
+        'parent category': allCategories.find(p => p.id === c.parentId)?.name || '',
+    }));
+
+    // 3. Create Worksheets
+    const transactionsWs = XLSX.utils.json_to_sheet(transactionData);
+    const categoriesWs = XLSX.utils.json_to_sheet(categoryData);
+
+    // 4. Create Workbook and add worksheets
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, transactionsWs, "Transactions");
+    XLSX.utils.book_append_sheet(wb, categoriesWs, "Categories");
+
+    // 5. Trigger download
+    XLSX.writeFile(wb, "expensewise-export.xlsx");
+
+    toast({
+        title: "Export Successful",
+        description: "Your data has been exported."
+    });
+  };
+
   const handleImport = () => {
     if (!importFile) {
       toast({
@@ -145,19 +185,22 @@ export default function SettingsPage() {
           if (!row.trim()) return; // Skip empty rows
           const columns = row.split(',');
 
+          if (columns.length < 7) {
+            throw new Error(`Row ${index + 2} is missing columns.`);
+          }
+
           const amount = parseFloat(columns[2]);
           if (isNaN(amount)) {
             throw new Error(`Invalid amount on row ${index + 2}`);
           }
 
-          // More robust date parsing
           const dateString = columns[6];
           if (!dateString) {
             throw new Error(`Date is missing on row ${index + 2}`);
           }
           const dateValue = new Date(dateString.trim());
           if (isNaN(dateValue.getTime())) {
-             throw new Error(`Invalid time value on row ${index + 2}`);
+             throw new Error(`Invalid time value on row ${index + 2}: "${dateString}". Please use a standard format like YYYY-MM-DD.`);
           }
           
           const newTransaction: Omit<Transaction, 'id'> = {
@@ -167,8 +210,7 @@ export default function SettingsPage() {
             description: columns[3],
             wallet: columns[4],
             currency: columns[5] || getDefaultCurrency(),
-            date: dateValue.toISOString().split('T')[0], // format to YYYY-MM-DD
-            // Event (columns[7]) and Exclude Report (columns[8]) are not used yet
+            date: dateValue.toISOString().split('T')[0],
           };
           newTransactions.push(newTransaction);
         });
@@ -180,7 +222,6 @@ export default function SettingsPage() {
           description: `${newTransactions.length} transactions have been imported.`,
         });
         setImportFile(null);
-        // Clear file input
         const fileInput = document.getElementById('import-file') as HTMLInputElement;
         if(fileInput) fileInput.value = '';
 
@@ -252,23 +293,36 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Bulk Import</CardTitle>
+              <CardTitle>Bulk Import / Export</CardTitle>
               <CardDescription>
-                Migrate your data from Money Lover or other services using our template.
+                Migrate your data from other services or download a backup of your data.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Download the CSV template, fill it with your transaction data, and upload it here.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
-                  <Button variant="outline" onClick={handleDownloadTemplate}>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Template
-                  </Button>
-              </div>
+               <div className="p-4 border rounded-lg flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                        <h3 className="font-semibold">Import Data</h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                            Download the CSV template, fill it, and upload it to import transactions.
+                        </p>
+                         <Button variant="outline" onClick={handleDownloadTemplate}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Template
+                        </Button>
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-semibold">Export Data</h3>
+                        <p className="text-sm text-muted-foreground mb-2">
+                            Export all your transactions and categories into a single .xlsx file.
+                        </p>
+                        <Button variant="outline" onClick={handleExport}>
+                            <UploadCloud className="mr-2 h-4 w-4" />
+                           Export All Data
+                        </Button>
+                    </div>
+               </div>
               <div className="space-y-2">
-                <Label htmlFor="import-file">Upload CSV File</Label>
+                <Label htmlFor="import-file">Upload CSV File for Import</Label>
                 <div className="flex items-center gap-2">
                   <Input id="import-file" type="file" accept=".csv" className="max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
                 </div>
@@ -292,3 +346,5 @@ export default function SettingsPage() {
     </>
   )
 }
+
+    
