@@ -24,6 +24,8 @@ import { transactions } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
+import { MonthlyReportCard } from '@/components/monthly-report-card';
+import { TrendingReportCard } from '@/components/trending-report-card';
 
 export default function Dashboard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -118,6 +120,10 @@ export default function Dashboard() {
             </Card>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+             <div className="col-span-full grid gap-4 lg:grid-cols-2">
+                <MonthlyReportCard />
+                <TrendingReportCard />
+            </div>
             <Card className="col-span-4">
               <CardHeader>
                 <CardTitle>Overview</CardTitle>
