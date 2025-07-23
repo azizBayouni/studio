@@ -150,9 +150,14 @@ export default function SettingsPage() {
             throw new Error(`Invalid amount on row ${index + 2}`);
           }
 
-          const dateValue = new Date(columns[6]);
+          // More robust date parsing
+          const dateString = columns[6];
+          if (!dateString) {
+            throw new Error(`Date is missing on row ${index + 2}`);
+          }
+          const dateValue = new Date(dateString.trim());
           if (isNaN(dateValue.getTime())) {
-            throw new Error(`Invalid time value on row ${index + 2}`);
+             throw new Error(`Invalid time value on row ${index + 2}`);
           }
           
           const newTransaction: Omit<Transaction, 'id'> = {
