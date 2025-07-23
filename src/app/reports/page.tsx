@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -15,12 +17,27 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { transactions } from '@/lib/data';
 import { ReportsFilter } from '@/components/reports-filter';
+import { useEffect, useState } from 'react';
+import { getDefaultCurrency } from '@/services/settings-service';
 
 export default function ReportsPage() {
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+
+  useEffect(() => {
+    setDefaultCurrency(getDefaultCurrency());
+  }, []);
+  
   const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+    }).format(amount);
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex items-center justify-between space-y-2">
@@ -59,7 +76,7 @@ export default function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {reportableTransactions.slice(0, 7).map((transaction) => (
+                      {reportableTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                           <TableCell>
                             <div className="font-medium">{transaction.category}</div>
@@ -67,7 +84,7 @@ export default function ReportsPage() {
                           </TableCell>
                           <TableCell>{transaction.wallet}</TableCell>
                           <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
-                              {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                              {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
                           </TableCell>
                         </TableRow>
                       ))}
