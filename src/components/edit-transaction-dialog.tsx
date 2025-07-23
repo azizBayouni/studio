@@ -50,6 +50,7 @@ import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -75,6 +76,7 @@ export function EditTransactionDialog({
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const [eventId, setEventId] = useState<string | undefined>(undefined);
+  const [excludeFromReport, setExcludeFromReport] = useState(false);
   const { toast } = useToast();
 
   const convertAmount = useCallback(async (
@@ -146,6 +148,7 @@ export function EditTransactionDialog({
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
       setEventId(transaction.eventId);
+      setExcludeFromReport(transaction.excludeFromReport || false);
       
       const savedAmount = transaction.amount;
       // In a real app with more complex data, you'd store originalAmount and originalCurrency.
@@ -197,6 +200,7 @@ export function EditTransactionDialog({
         currency: defaultCurrency, // Always save in default currency
         attachments,
         eventId: eventId,
+        excludeFromReport: excludeFromReport,
     };
 
     updateTransaction(updatedTransaction);
@@ -438,6 +442,10 @@ export function EditTransactionDialog({
                     ))}
                     </div>
                 )}
+                </div>
+                 <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-exclude-report" checked={excludeFromReport} onCheckedChange={(checked) => setExcludeFromReport(Boolean(checked))} />
+                    <Label htmlFor="edit-exclude-report">Exclude from report</Label>
                 </div>
             </div>
             <DialogFooter className="sm:justify-between">

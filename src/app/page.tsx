@@ -33,7 +33,8 @@ export default function Dashboard() {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
 
-  const recentTransactions = transactions.slice(0, 5);
+  const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
+  const recentTransactions = reportableTransactions.slice(0, 5);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -129,7 +130,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>
-                  You made {transactions.length} transactions this month.
+                  You made {reportableTransactions.length} transactions this month.
                 </CardDescription>
               </CardHeader>
               <CardContent>

@@ -139,7 +139,7 @@ export default function SettingsPage() {
             'Currency': t.currency,
             'Date': t.date,
             'Event': eventName,
-            'Exclude Report': '', // This field is not in the model yet
+            'Exclude Report': t.excludeFromReport ? 'Yes' : '',
         };
     });
 
@@ -251,6 +251,7 @@ export default function SettingsPage() {
             currency: currency || getDefaultCurrency(),
             date: dateValue.toISOString().split('T')[0],
             eventId: eventObj?.id,
+            excludeFromReport: !!excludeReport,
           };
           newTransactions.push(newTransaction);
         });

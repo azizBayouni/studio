@@ -41,6 +41,7 @@ export type Transaction = {
   currency: string;
   attachments?: File[];
   eventId?: string;
+  excludeFromReport?: boolean;
 };
 
 export type Wallet = {
@@ -96,7 +97,7 @@ export const transactions: Transaction[] = [
   { id: 't1', date: '2024-07-20', amount: 15.50, type: 'expense', category: 'Restaurants', wallet: 'Main Wallet', description: 'Lunch with colleagues', currency: 'USD', attachments: [], eventId: 'e1' },
   { id: 't2', date: '2024-07-20', amount: 80.00, type: 'expense', category: 'Groceries', wallet: 'Main Wallet', description: 'Weekly grocery shopping', currency: 'USD' },
   { id: 't3', date: '2024-07-19', amount: 2500, type: 'income', category: 'Salary', wallet: 'Main Wallet', description: 'Monthly salary', currency: 'USD' },
-  { id: 't4', date: '2024-07-18', amount: 120.00, type: 'expense', category: 'Clothing', wallet: 'Credit Card', description: 'New shoes', currency: 'USD', eventId: 'e1' },
+  { id: 't4', date: '2024-07-18', amount: 120.00, type: 'expense', category: 'Clothing', wallet: 'Credit Card', description: 'New shoes', currency: 'USD', eventId: 'e1', excludeFromReport: true },
   { id: 't5', date: '2024-07-17', amount: 45.00, type: 'expense', category: 'Fuel', wallet: 'Main Wallet', description: 'Gas for the car', currency: 'USD' },
   { id: 't6', date: '2024-07-15', amount: 1200.00, type: 'expense', category: 'Rent', wallet: 'Main Wallet', description: 'Monthly rent', currency: 'USD' },
   { id: 't7', date: '2024-07-12', amount: 550.00, type: 'income', category: 'Freelance', wallet: 'PayPal', description: 'Project payment', currency: 'USD' },

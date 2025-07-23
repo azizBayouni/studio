@@ -40,6 +40,7 @@ import { getDefaultCurrency } from '@/services/settings-service';
 import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { getDefaultWallet } from '@/services/wallet-service';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface NewTransactionDialogProps {
   isOpen: boolean;
@@ -63,6 +64,7 @@ export function NewTransactionDialog({
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const [eventId, setEventId] = useState<string | undefined>(undefined);
+  const [excludeFromReport, setExcludeFromReport] = useState(false);
   const { toast } = useToast();
 
   const convertAmount = useCallback(async (
@@ -115,6 +117,7 @@ export function NewTransactionDialog({
     setDescription('');
     setCategory('');
     setEventId(undefined);
+    setExcludeFromReport(false);
     
     const defaultWalletId = getDefaultWallet();
     const defaultWallet = wallets.find(w => w.id === defaultWalletId);
@@ -180,6 +183,7 @@ export function NewTransactionDialog({
         currency: defaultCurrency,
         attachments,
         eventId: eventId,
+        excludeFromReport: excludeFromReport,
     };
 
     addTransaction(newTransaction);
@@ -346,26 +350,30 @@ export function NewTransactionDialog({
                     </Popover>
                 </div>
                 <div className="space-y-2">
-                <Label htmlFor="attachments">Attachments</Label>
-                <Button asChild variant="outline" className="w-full">
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                    <Paperclip className="mr-2 h-4 w-4" />
-                    Add Attachments
-                    </label>
-                </Button>
-                <Input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
-                {attachments.length > 0 && (
-                    <div className="space-y-2 pt-2">
-                    {attachments.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
-                        <span className="truncate">{file.name}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(index)}>
-                            <X className="h-4 w-4" />
-                        </Button>
+                    <Label htmlFor="attachments">Attachments</Label>
+                    <Button asChild variant="outline" className="w-full">
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                        <Paperclip className="mr-2 h-4 w-4" />
+                        Add Attachments
+                        </label>
+                    </Button>
+                    <Input id="file-upload" type="file" multiple className="hidden" onChange={handleFileChange} />
+                    {attachments.length > 0 && (
+                        <div className="space-y-2 pt-2">
+                        {attachments.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between text-sm p-2 bg-muted rounded-md">
+                            <span className="truncate">{file.name}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeAttachment(index)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                            </div>
+                        ))}
                         </div>
-                    ))}
-                    </div>
-                )}
+                    )}
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Checkbox id="exclude-report" checked={excludeFromReport} onCheckedChange={(checked) => setExcludeFromReport(Boolean(checked))} />
+                    <Label htmlFor="exclude-report">Exclude from report</Label>
                 </div>
             </div>
             <DialogFooter>
