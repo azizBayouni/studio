@@ -31,7 +31,7 @@ export default function ReportsPage() {
   
   // State for filters
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
-  const [timeRange, setTimeRange] = useState<string>('week');
+  const [timeRange, setTimeRange] = useState('this-month');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [dateOffset, setDateOffset] = useState(0);
@@ -78,10 +78,10 @@ export default function ReportsPage() {
 
       const walletFilterMatch = selectedWallets.length === 0 || selectedWallets.includes(t.wallet);
       
-      const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(
-          parseISO(t.date), 
-          { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) }
-      );
+      const dateFilterMatch = !dateRange || !dateRange.from || (isWithinInterval(
+        parseISO(t.date),
+        { start: dateRange.from, end: dateRange.to ? endOfDay(dateRange.to) : new Date() }
+      ));
       
       return walletFilterMatch && dateFilterMatch;
     });
@@ -154,6 +154,7 @@ export default function ReportsPage() {
 
     const now = new Date();
     const from = dateRange.from;
+    const to = dateRange.to || from;
 
     if (timeRange === 'day') {
         if (isSameDay(now, from)) return 'Today';
@@ -165,6 +166,8 @@ export default function ReportsPage() {
     }
     if (timeRange === 'this-month') {
         if (isSameMonth(now, from)) return 'This Month';
+    }
+    if (timeRange === 'last-month') {
         if (isSameMonth(subMonths(now, 1), from)) return 'Last Month';
     }
      if (timeRange === 'quarter') {
@@ -175,11 +178,11 @@ export default function ReportsPage() {
         if (isSameYear(now, from)) return 'This Year';
         if (isSameYear(subYears(now, 1), from)) return 'Last Year';
     }
-
-    if (dateRange.to && !isSameDay(dateRange.from, dateRange.to)) {
-        return `${format(dateRange.from, 'dd MMM yy')} - ${format(dateRange.to, 'dd MMM yy')}`;
+    
+    if (!isSameDay(from, to)) {
+        return `${format(from, 'dd MMM yy')} - ${format(to, 'dd MMM yy')}`;
     }
-    return format(dateRange.from, 'dd MMM yyyy');
+    return format(from, 'dd MMM yyyy');
   };
   
   const canNavigate = useMemo(() => {
@@ -206,12 +209,7 @@ export default function ReportsPage() {
                 selected={selectedWallets}
                 onChange={setSelectedWallets}
                 className="w-auto"
-                placeholder={
-                    <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4" />
-                        <span>Total</span>
-                    </div>
-                }
+                placeholder="Total"
             />
        </header>
 
@@ -222,7 +220,7 @@ export default function ReportsPage() {
         <div className="text-center font-semibold text-foreground">
           {getDateRangeLabel()}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d + 1)} disabled={!canNavigate}>
+        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d + 1)} disabled={!canNavigate || dateOffset >= 0}>
             <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
@@ -247,13 +245,13 @@ export default function ReportsPage() {
             <p className="text-2xl font-bold">{getSign(summary.netIncome)}{formatCurrency(summary.netIncome)}</p>
             <div className="flex justify-between text-sm text-muted-foreground mt-2">
                 <span>Income</span>
-                <span>{formatCurrency(summary.totalIncome)}</span>
+                <span className="text-accent">{formatCurrency(summary.totalIncome)}</span>
             </div>
              <div className="flex justify-between text-sm text-muted-foreground mt-1">
                 <span>Expense</span>
-                <span>{formatCurrency(summary.totalExpense)}</span>
+                <span className="text-destructive">{formatCurrency(summary.totalExpense)}</span>
             </div>
-            <Progress value={summary.totalIncome + summary.totalExpense > 0 ? (summary.totalExpense / (summary.totalIncome + summary.totalExpense)) * 100 : 0} className="mt-2 h-2" />
+            <Progress value={summary.totalIncome + summary.totalExpense > 0 ? (summary.totalIncome / (summary.totalIncome + summary.totalExpense)) * 100 : 0} className="mt-2 h-2" />
         </CardContent>
       </Card>
 
@@ -267,7 +265,7 @@ export default function ReportsPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <p className="text-sm text-muted-foreground">Income</p>
-                            <p className="font-semibold">{formatCurrency(summary.totalIncome)}</p>
+                            <p className="font-semibold text-accent">{formatCurrency(summary.totalIncome)}</p>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />
                     </div>
@@ -300,3 +298,5 @@ export default function ReportsPage() {
     </>
   );
 }
+
+    
