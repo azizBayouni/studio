@@ -8,6 +8,15 @@ export function addTransaction(newTransaction: Omit<Transaction, 'id'>): void {
     window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
+export function addTransactions(newTransactions: Omit<Transaction, 'id'>[]): void {
+    const newItems = newTransactions.map((t, i) => {
+        const newId = 't' + (Math.max(0, ...transactions.map(t => parseInt(t.id.substring(1))), ...newTransactions.map((nt, nti) => parseInt('9999'+nti))) + 1 + i).toString();
+        return { ...t, id: newId };
+    });
+    transactions.unshift(...newItems);
+    window.dispatchEvent(new Event('transactionsUpdated'));
+}
+
 export function updateTransaction(updatedTransaction: Transaction): void {
     const index = transactions.findIndex(t => t.id === updatedTransaction.id);
     if (index !== -1) {

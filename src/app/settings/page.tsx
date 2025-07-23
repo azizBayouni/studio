@@ -24,9 +24,10 @@ import { currencies } from "@/lib/data"
 import { FileUp, Download } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
-import { convertAllTransactions, convertAllWallets, convertAllDebts } from "@/services/transaction-service";
+import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 import { getUser, updateUser } from "@/services/user-service";
+import type { Transaction } from "@/lib/data";
 
 export default function SettingsPage() {
   const [name, setName] = useState('');
@@ -34,6 +35,7 @@ export default function SettingsPage() {
   const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,6 +122,69 @@ export default function SettingsPage() {
     document.body.removeChild(link);
   };
 
+  const handleImport = () => {
+    if (!importFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a CSV file to import.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+
+      const rows = text.split('\n').slice(1); // Skip header row
+      const newTransactions: Omit<Transaction, 'id'>[] = [];
+
+      try {
+        rows.forEach((row, index) => {
+          if (!row.trim()) return; // Skip empty rows
+          const columns = row.split(',');
+
+          const amount = parseFloat(columns[2]);
+          if (isNaN(amount)) {
+            throw new Error(`Invalid amount on row ${index + 2}`);
+          }
+          
+          const newTransaction: Omit<Transaction, 'id'> = {
+            category: columns[1],
+            amount: Math.abs(amount),
+            type: amount >= 0 ? 'income' : 'expense',
+            description: columns[3],
+            wallet: columns[4],
+            currency: columns[5] || getDefaultCurrency(),
+            date: new Date(columns[6]).toISOString().split('T')[0], // format to YYYY-MM-DD
+            // Event (columns[7]) and Exclude Report (columns[8]) are not used yet
+          };
+          newTransactions.push(newTransaction);
+        });
+
+        addTransactions(newTransactions);
+
+        toast({
+          title: 'Import Successful',
+          description: `${newTransactions.length} transactions have been imported.`,
+        });
+        setImportFile(null);
+        // Clear file input
+        const fileInput = document.getElementById('import-file') as HTMLInputElement;
+        if(fileInput) fileInput.value = '';
+
+      } catch (error: any) {
+        toast({
+          title: 'Import Failed',
+          description: error.message || 'An unexpected error occurred during import.',
+          variant: 'destructive',
+        });
+      }
+    };
+    reader.readAsText(importFile);
+  };
+
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -195,12 +260,12 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="import-file">Upload CSV File</Label>
                 <div className="flex items-center gap-2">
-                  <Input id="import-file" type="file" className="max-w-xs" />
+                  <Input id="import-file" type="file" accept=".csv" className="max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button>
+              <Button onClick={handleImport}>
                 <FileUp className="mr-2 h-4 w-4" /> Upload and Import
               </Button>
             </CardFooter>
