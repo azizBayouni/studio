@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -19,48 +20,54 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { categories, wallets } from '@/lib/data';
 import type { DateRange } from 'react-day-picker';
-import { useState } from 'react';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 
-export function ReportsFilter() {
-  const [date, setDate] = useState<DateRange | undefined>();
+interface ReportsFilterProps {
+  selectedCategories: string[];
+  onSelectedCategoriesChange: (categories: string[]) => void;
+  walletFilter: string;
+  onWalletFilterChange: (wallet: string) => void;
+  dateRange: DateRange | undefined;
+  onDateRangeChange: (dateRange: DateRange | undefined) => void;
+}
 
-  const renderCategoryOptions = () => {
-    const parentCategories = categories.filter((c) => c.parentId === null);
-    const options: JSX.Element[] = [];
+export function ReportsFilter({
+  selectedCategories,
+  onSelectedCategoriesChange,
+  walletFilter,
+  onWalletFilterChange,
+  dateRange,
+  onDateRangeChange,
+}: ReportsFilterProps) {
 
-    parentCategories.forEach((parent) => {
-      options.push(
-        <SelectItem key={parent.id} value={parent.name} className="font-bold">
-          {parent.name}
-        </SelectItem>
-      );
-      const subCategories = categories.filter((c) => c.parentId === parent.id);
-      subCategories.forEach((sub) => {
-        options.push(
-          <SelectItem key={sub.id} value={sub.name} className="pl-8">
-            {sub.name}
-          </SelectItem>
-        );
-      });
-    });
-    return options;
+  const categoryOptions: MultiSelectOption[] = categories.map((c) => ({
+    value: c.name,
+    label: c.name,
+  }));
+  
+  const handleClearFilters = () => {
+    onSelectedCategoriesChange([]);
+    onWalletFilterChange('all');
+    onDateRangeChange(undefined);
   };
 
   return (
     <div className="flex flex-col md:flex-row items-center gap-4 p-4 border rounded-lg bg-card">
       <div className="grid grid-cols-2 md:flex md:flex-row w-full gap-4">
-        <Select>
-          <SelectTrigger>
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>{renderCategoryOptions()}</SelectContent>
-        </Select>
+        <MultiSelect
+          options={categoryOptions}
+          selected={selectedCategories}
+          onChange={onSelectedCategoriesChange}
+          className="md:w-[250px] col-span-2"
+          placeholder="Filter by category"
+        />
 
-        <Select>
-          <SelectTrigger>
+        <Select value={walletFilter} onValueChange={onWalletFilterChange}>
+          <SelectTrigger className="md:w-[180px]">
             <SelectValue placeholder="Wallet" />
           </SelectTrigger>
           <SelectContent>
+             <SelectItem value="all">All Wallets</SelectItem>
             {wallets.map((wallet) => (
               <SelectItem key={wallet.id} value={wallet.name}>
                 {wallet.name}
@@ -76,18 +83,18 @@ export function ReportsFilter() {
               variant={'outline'}
               className={cn(
                 'w-full justify-start text-left font-normal col-span-2',
-                !date && 'text-muted-foreground'
+                !dateRange && 'text-muted-foreground'
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {date?.from ? (
-                date.to ? (
+              {dateRange?.from ? (
+                dateRange.to ? (
                   <>
-                    {format(date.from, 'LLL dd, y')} -{' '}
-                    {format(date.to, 'LLL dd, y')}
+                    {format(dateRange.from, 'LLL dd, y')} -{' '}
+                    {format(dateRange.to, 'LLL dd, y')}
                   </>
                 ) : (
-                  format(date.from, 'LLL dd, y')
+                  format(dateRange.from, 'LLL dd, y')
                 )
               ) : (
                 <span>Custom duration</span>
@@ -98,15 +105,15 @@ export function ReportsFilter() {
             <Calendar
               initialFocus
               mode="range"
-              defaultMonth={date?.from}
-              selected={date}
-              onSelect={setDate}
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={onDateRangeChange}
               numberOfMonths={2}
             />
           </PopoverContent>
         </Popover>
       </div>
-       <Button variant="ghost" size="icon" className="flex-shrink-0">
+       <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={handleClearFilters}>
           <FilterX className="h-4 w-4" />
           <span className="sr-only">Clear Filters</span>
        </Button>

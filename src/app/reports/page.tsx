@@ -19,17 +19,35 @@ import {
 } from '@/components/ui/table';
 import { transactions } from '@/lib/data';
 import { ReportsFilter } from '@/components/reports-filter';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getDefaultCurrency } from '@/services/settings-service';
+import type { DateRange } from 'react-day-picker';
+import { parseISO, isWithinInterval, endOfDay } from 'date-fns';
 
 export default function ReportsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  
+  // State for filters
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [walletFilter, setWalletFilter] = useState('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
   
-  const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
+  const reportableTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      if (t.excludeFromReport) return false;
+
+      const categoryFilterMatch = selectedCategories.length === 0 || selectedCategories.includes(t.category);
+      const walletFilterMatch = walletFilter === 'all' || t.wallet === walletFilter;
+      const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(parseISO(t.date), { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) });
+      
+      return categoryFilterMatch && walletFilterMatch && dateFilterMatch;
+    });
+  }, [selectedCategories, walletFilter, dateRange]);
+
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -49,7 +67,14 @@ export default function ReportsPage() {
         </div>
       </div>
       <div className="space-y-4">
-        <ReportsFilter />
+        <ReportsFilter 
+          selectedCategories={selectedCategories}
+          onSelectedCategoriesChange={setSelectedCategories}
+          walletFilter={walletFilter}
+          onWalletFilterChange={setWalletFilter}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+        />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <Card className="col-span-4">
             <CardHeader>
@@ -63,7 +88,9 @@ export default function ReportsPage() {
           <Card className="col-span-4 lg:col-span-3">
             <CardHeader>
               <CardTitle>Filtered Transactions</CardTitle>
-              <CardDescription>The transactions matching your filter criteria.</CardDescription>
+               <CardDescription>
+                Showing {reportableTransactions.length} transaction(s) matching your criteria.
+              </CardDescription>
             </CardHeader>
             <CardContent>
                <div className="rounded-md border">
@@ -76,18 +103,26 @@ export default function ReportsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {reportableTransactions.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>
-                            <div className="font-medium">{transaction.category}</div>
-                            <div className="hidden text-sm text-muted-foreground md:inline">{transaction.description}</div>
-                          </TableCell>
-                          <TableCell>{transaction.wallet}</TableCell>
-                          <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
-                              {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+                      {reportableTransactions.length > 0 ? (
+                        reportableTransactions.map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              <div className="font-medium">{transaction.category}</div>
+                              <div className="hidden text-sm text-muted-foreground md:inline">{transaction.description}</div>
+                            </TableCell>
+                            <TableCell>{transaction.wallet}</TableCell>
+                            <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : 'text-destructive'}`}>
+                                {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="h-24 text-center">
+                            No results found.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </div>
