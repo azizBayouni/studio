@@ -68,6 +68,7 @@ export function EditTransactionDialog({
   const [originalAmount, setOriginalAmount] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [subCategory, setSubCategory] = useState<string | undefined>(undefined);
   const [wallet, setWallet] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -144,6 +145,7 @@ export function EditTransactionDialog({
       
       setDescription(transaction.description || '');
       setCategory(transaction.category);
+      setSubCategory(transaction.subCategory);
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
@@ -195,6 +197,7 @@ export function EditTransactionDialog({
         type,
         description,
         category,
+        subCategory,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
         currency: defaultCurrency, // Always save in default currency

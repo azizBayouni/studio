@@ -20,15 +20,18 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Wallet, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { Overview } from '@/components/overview';
-import { transactions } from '@/lib/data';
+import { transactions, type Transaction } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { MonthlyReportCard } from '@/components/monthly-report-card';
 import { TrendingReportCard } from '@/components/trending-report-card';
+import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
 
 export default function Dashboard() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
   useEffect(() => {
@@ -52,6 +55,11 @@ export default function Dashboard() {
     }).format(amount);
   }
 
+  const handleRowClick = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditDialogOpen(true);
+  };
+
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -63,7 +71,7 @@ export default function Dashboard() {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-              <Button onClick={() => setIsDialogOpen(true)}>
+              <Button onClick={() => setIsAddDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> New Transaction
               </Button>
           </div>
@@ -150,7 +158,7 @@ export default function Dashboard() {
                   </TableHeader>
                   <TableBody>
                     {recentTransactions.map((transaction) => (
-                       <TableRow key={transaction.id}>
+                       <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
                          <TableCell>
                            <div className="font-medium">{transaction.category}</div>
                            <div className="hidden text-sm text-muted-foreground md:inline">{transaction.description}</div>
@@ -168,7 +176,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <NewTransactionDialog isOpen={isDialogOpen} onOpenChange={setIsDialogOpen} />
+      <NewTransactionDialog isOpen={isAddDialogOpen} onOpenChange={setIsAddDialogOpen} />
+      <EditTransactionDialog 
+        isOpen={isEditDialogOpen} 
+        onOpenChange={setIsEditDialogOpen} 
+        transaction={selectedTransaction}
+      />
     </>
   );
 }
