@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currencies, transactions as allTransactions, categories as allCategories } from "@/lib/data"
+import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents } from "@/lib/data"
 import { FileUp, Download, UploadCloud } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
@@ -181,35 +181,57 @@ export default function SettingsPage() {
       const newTransactions: Omit<Transaction, 'id'>[] = [];
 
       try {
+        const categoryNames = new Set(allCategories.map(c => c.name.toLowerCase()));
+        const walletNames = new Set(allWallets.map(w => w.name.toLowerCase()));
+        const currencyCodes = new Set(currencies.map(c => c.toLowerCase()));
+        const eventNames = new Set(allEvents.map(ev => ev.name.toLowerCase()));
+
         rows.forEach((row, index) => {
           if (!row.trim()) return; // Skip empty rows
-          const columns = row.split(',');
+          const columns = row.split(',').map(c => c.trim());
+          const rowNum = index + 2;
 
           if (columns.length < 7) {
-            throw new Error(`Row ${index + 2} is missing columns.`);
+            throw new Error(`Row ${rowNum} is missing columns.`);
+          }
+          
+          const [no, category, amountStr, note, wallet, currency, dateString, eventName, excludeReport] = columns;
+
+          // --- VALIDATION ---
+          if (!categoryNames.has(category.toLowerCase())) {
+            throw new Error(`Error on row ${rowNum}: Category '${category}' not found.`);
+          }
+          if (!walletNames.has(wallet.toLowerCase())) {
+            throw new Error(`Error on row ${rowNum}: Wallet '${wallet}' not found.`);
+          }
+          if (currency && !currencyCodes.has(currency.toLowerCase())) {
+             throw new Error(`Error on row ${rowNum}: Currency '${currency}' not found.`);
+          }
+          if (eventName && !eventNames.has(eventName.toLowerCase())) {
+             throw new Error(`Error on row ${rowNum}: Event '${eventName}' not found.`);
           }
 
-          const amount = parseFloat(columns[2]);
+
+          const amount = parseFloat(amountStr);
           if (isNaN(amount)) {
-            throw new Error(`Invalid amount on row ${index + 2}`);
+            throw new Error(`Invalid amount on row ${rowNum}`);
           }
-
-          const dateString = columns[6];
+          
           if (!dateString) {
-            throw new Error(`Date is missing on row ${index + 2}`);
+            throw new Error(`Date is missing on row ${rowNum}`);
           }
           const dateValue = new Date(dateString.trim());
           if (isNaN(dateValue.getTime())) {
-             throw new Error(`Invalid time value on row ${index + 2}: "${dateString}". Please use a standard format like YYYY-MM-DD.`);
+             throw new Error(`Invalid time value on row ${rowNum}: "${dateString}". Please use a standard format like YYYY-MM-DD.`);
           }
           
           const newTransaction: Omit<Transaction, 'id'> = {
-            category: columns[1],
+            category: category,
             amount: Math.abs(amount),
             type: amount >= 0 ? 'income' : 'expense',
-            description: columns[3],
-            wallet: columns[4],
-            currency: columns[5] || getDefaultCurrency(),
+            description: note,
+            wallet: wallet,
+            currency: currency || getDefaultCurrency(),
             date: dateValue.toISOString().split('T')[0],
           };
           newTransactions.push(newTransaction);
@@ -346,5 +368,3 @@ export default function SettingsPage() {
     </>
   )
 }
-
-    
