@@ -29,6 +29,7 @@ import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-chang
 import { getUser, updateUser } from "@/services/user-service";
 import type { Transaction } from "@/lib/data";
 import * as XLSX from 'xlsx';
+import { parseISO } from "date-fns";
 
 
 export default function SettingsPage() {
@@ -220,9 +221,10 @@ export default function SettingsPage() {
           if (!dateString) {
             throw new Error(`Date is missing on row ${rowNum}`);
           }
-          const dateValue = new Date(dateString.trim());
+          // More robust date parsing
+          const dateValue = new Date(dateString.trim().replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$2/$1/$3')); // Attempt to handle MM/DD vs DD/MM
           if (isNaN(dateValue.getTime())) {
-             throw new Error(`Invalid time value on row ${rowNum}: "${dateString}". Please use a standard format like YYYY-MM-DD.`);
+             throw new Error(`Invalid time value on row ${rowNum}: "${dateString}". Please use a standard format like YYYY-MM-DD or MM/DD/YYYY.`);
           }
           
           const newTransaction: Omit<Transaction, 'id'> = {
@@ -253,6 +255,9 @@ export default function SettingsPage() {
           description: error.message || 'An unexpected error occurred during import.',
           variant: 'destructive',
         });
+        setImportFile(null);
+        const fileInput = document.getElementById('import-file') as HTMLInputElement;
+        if(fileInput) fileInput.value = '';
       }
     };
     reader.readAsText(importFile);
