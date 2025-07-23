@@ -197,9 +197,11 @@ export default function SettingsPage() {
           }
           
           const [no, category, amountStr, note, wallet, currency, dateString, eventName, excludeReport] = columns;
+          
+          const categoryObj = allCategories.find(c => c.name.toLowerCase() === category.toLowerCase());
 
           // --- VALIDATION ---
-          if (!categoryNames.has(category.toLowerCase())) {
+          if (!categoryObj) {
             throw new Error(`Error on row ${rowNum}: Category '${category}' not found.`);
           }
           if (!walletNames.has(wallet.toLowerCase())) {
@@ -212,10 +214,17 @@ export default function SettingsPage() {
              throw new Error(`Error on row ${rowNum}: Event '${eventName}' not found.`);
           }
 
-
           const amount = parseFloat(amountStr);
           if (isNaN(amount)) {
             throw new Error(`Invalid amount on row ${rowNum}`);
+          }
+          
+          if (categoryObj.type === 'expense' && amount >= 0) {
+            throw new Error(`Error on row ${rowNum}: Expense amount must be negative.`);
+          }
+
+          if (categoryObj.type === 'income' && amount <= 0) {
+            throw new Error(`Error on row ${rowNum}: Income amount must be positive.`);
           }
           
           if (!dateString) {
@@ -230,7 +239,7 @@ export default function SettingsPage() {
           const newTransaction: Omit<Transaction, 'id'> = {
             category: category,
             amount: Math.abs(amount),
-            type: amount >= 0 ? 'income' : 'expense',
+            type: categoryObj.type,
             description: note,
             wallet: wallet,
             currency: currency || getDefaultCurrency(),
