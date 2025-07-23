@@ -7,8 +7,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, FilterX } from 'lucide-react';
+import { Calendar as CalendarIcon, FilterX, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { categories, wallets } from '@/lib/data';
@@ -20,8 +27,10 @@ interface ReportsFilterProps {
   onSelectedCategoriesChange: (categories: string[]) => void;
   selectedWallets: string[];
   onSelectedWalletsChange: (wallets: string[]) => void;
-  dateRange: DateRange | undefined;
-  onDateRangeChange: (dateRange: DateRange | undefined) => void;
+  timeRange: string;
+  onTimeRangeChange: (value: string) => void;
+  customDateRange: DateRange | undefined;
+  onCustomDateRangeChange: (dateRange: DateRange | undefined) => void;
 }
 
 export function ReportsFilter({
@@ -29,8 +38,10 @@ export function ReportsFilter({
   onSelectedCategoriesChange,
   selectedWallets,
   onSelectedWalletsChange,
-  dateRange,
-  onDateRangeChange,
+  timeRange,
+  onTimeRangeChange,
+  customDateRange,
+  onCustomDateRangeChange,
 }: ReportsFilterProps) {
 
   const categoryOptions: MultiSelectOption[] = categories.map((c) => ({
@@ -46,7 +57,8 @@ export function ReportsFilter({
   const handleClearFilters = () => {
     onSelectedCategoriesChange([]);
     onSelectedWalletsChange([]);
-    onDateRangeChange(undefined);
+    onTimeRangeChange('all');
+    onCustomDateRangeChange(undefined);
   };
 
   return (
@@ -68,42 +80,65 @@ export function ReportsFilter({
             placeholder="Filter by wallet"
         />
 
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              id="date"
-              variant={'outline'}
-              className={cn(
-                'w-full justify-start text-left font-normal col-span-2',
-                !dateRange && 'text-muted-foreground'
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {dateRange?.from ? (
-                dateRange.to ? (
-                  <>
-                    {format(dateRange.from, 'LLL dd, y')} -{' '}
-                    {format(dateRange.to, 'LLL dd, y')}
-                  </>
+        <Select value={timeRange} onValueChange={onTimeRangeChange}>
+            <SelectTrigger className="md:w-[180px]">
+                <SelectValue placeholder="Select time range" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="day">Day</SelectItem>
+                <SelectItem value="week">Week</SelectItem>
+                <SelectItem value="month">Month</SelectItem>
+                <SelectItem value="quarter">Quarter</SelectItem>
+                <SelectItem value="year">Year</SelectItem>
+                <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                        <Edit className="h-4 w-4" />
+                        <span>Custom</span>
+                    </div>
+                </SelectItem>
+            </SelectContent>
+        </Select>
+
+
+        {timeRange === 'custom' && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="date"
+                variant={'outline'}
+                className={cn(
+                  'w-full justify-start text-left font-normal col-span-2',
+                  !customDateRange && 'text-muted-foreground'
+                )}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {customDateRange?.from ? (
+                  customDateRange.to ? (
+                    <>
+                      {format(customDateRange.from, 'LLL dd, y')} -{' '}
+                      {format(customDateRange.to, 'LLL dd, y')}
+                    </>
+                  ) : (
+                    format(customDateRange.from, 'LLL dd, y')
+                  )
                 ) : (
-                  format(dateRange.from, 'LLL dd, y')
-                )
-              ) : (
-                <span>Custom duration</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              initialFocus
-              mode="range"
-              defaultMonth={dateRange?.from}
-              selected={dateRange}
-              onSelect={onDateRangeChange}
-              numberOfMonths={2}
-            />
-          </PopoverContent>
-        </Popover>
+                  <span>Custom duration</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                initialFocus
+                mode="range"
+                defaultMonth={customDateRange?.from}
+                selected={customDateRange}
+                onSelect={onCustomDateRangeChange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
        <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={handleClearFilters}>
           <FilterX className="h-4 w-4" />

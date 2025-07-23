@@ -22,7 +22,8 @@ import { ReportsFilter } from '@/components/reports-filter';
 import { useEffect, useState, useMemo } from 'react';
 import { getDefaultCurrency } from '@/services/settings-service';
 import type { DateRange } from 'react-day-picker';
-import { parseISO, isWithinInterval, endOfDay } from 'date-fns';
+import { parseISO, isWithinInterval, endOfDay, startOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, startOfQuarter, endOfQuarter } from 'date-fns';
+import { ReportsSummaryCard } from '@/components/reports-summary-card';
 
 export default function ReportsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
@@ -30,11 +31,33 @@ export default function ReportsPage() {
   // State for filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [timeRange, setTimeRange] = useState<string>('all');
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
+
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    switch (timeRange) {
+      case 'day':
+        return { from: startOfDay(now), to: endOfDay(now) };
+      case 'week':
+        return { from: startOfWeek(now), to: endOfWeek(now) };
+      case 'month':
+        return { from: startOfMonth(now), to: endOfMonth(now) };
+      case 'quarter':
+        return { from: startOfQuarter(now), to: endOfQuarter(now) };
+      case 'year':
+        return { from: startOfYear(now), to: endOfYear(now) };
+      case 'custom':
+        return customDateRange;
+      case 'all':
+      default:
+        return undefined;
+    }
+  }, [timeRange, customDateRange]);
   
   const reportableTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -47,6 +70,26 @@ export default function ReportsPage() {
       return categoryFilterMatch && walletFilterMatch && dateFilterMatch;
     });
   }, [selectedCategories, selectedWallets, dateRange]);
+
+  const summary = useMemo(() => {
+    const totalIncome = reportableTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalExpense = reportableTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const netIncome = totalIncome - totalExpense;
+    
+    // Note: Opening and Ending balance calculations are simplified for this mock.
+    // A real implementation would require historical data.
+    const endingBalance = transactions.reduce((bal, t) => bal + (t.type === 'income' ? t.amount : -t.amount), 0);
+    const openingBalance = endingBalance - netIncome;
+
+
+    return { totalIncome, totalExpense, netIncome, openingBalance, endingBalance };
+  }, [reportableTransactions]);
 
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -72,9 +115,35 @@ export default function ReportsPage() {
           onSelectedCategoriesChange={setSelectedCategories}
           selectedWallets={selectedWallets}
           onSelectedWalletsChange={setSelectedWallets}
-          dateRange={dateRange}
-          onDateRangeChange={setDateRange}
+          timeRange={timeRange}
+          onTimeRangeChange={setTimeRange}
+          customDateRange={customDateRange}
+          onCustomDateRangeChange={setCustomDateRange}
         />
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Balance</CardTitle>
+                <CardDescription>
+                    Summary of your financial status for the selected period.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="text-4xl font-bold text-destructive">{formatCurrency(summary.endingBalance, defaultCurrency)}</div>
+            </CardContent>
+        </Card>
+        
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <ReportsSummaryCard title="Opening Balance" amount={summary.openingBalance} currency={defaultCurrency} />
+            <ReportsSummaryCard title="Ending Balance" amount={summary.endingBalance} currency={defaultCurrency} />
+            <ReportsSummaryCard title="Net Income" amount={summary.netIncome} currency={defaultCurrency} />
+        </div>
+         <div className="grid gap-4 md:grid-cols-2">
+            <ReportsSummaryCard title="Total Income" amount={summary.totalIncome} currency={defaultCurrency} type="income" />
+            <ReportsSummaryCard title="Total Expense" amount={summary.totalExpense} currency={defaultCurrency} type="expense" />
+        </div>
+
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <Card className="col-span-4">
             <CardHeader>
