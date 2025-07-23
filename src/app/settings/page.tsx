@@ -107,6 +107,19 @@ export default function SettingsPage() {
     window.location.reload();
   };
 
+  const handleDownloadTemplate = () => {
+    const headers = "No.,Category,Amount,Note,Wallet,Currency,Date,Event,Exclude Report";
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "import-template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -174,7 +187,7 @@ export default function SettingsPage() {
                 Download the CSV template, fill it with your transaction data, and upload it here.
               </p>
               <div className="flex flex-col sm:flex-row gap-2">
-                  <Button variant="outline">
+                  <Button variant="outline" onClick={handleDownloadTemplate}>
                       <Download className="mr-2 h-4 w-4" />
                       Download Template
                   </Button>
