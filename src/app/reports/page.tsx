@@ -29,7 +29,7 @@ export default function ReportsPage() {
   
   // State for filters
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [walletFilter, setWalletFilter] = useState('all');
+  const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   useEffect(() => {
@@ -41,12 +41,12 @@ export default function ReportsPage() {
       if (t.excludeFromReport) return false;
 
       const categoryFilterMatch = selectedCategories.length === 0 || selectedCategories.includes(t.category);
-      const walletFilterMatch = walletFilter === 'all' || t.wallet === walletFilter;
+      const walletFilterMatch = selectedWallets.length === 0 || selectedWallets.includes(t.wallet);
       const dateFilterMatch = !dateRange || !dateRange.from || isWithinInterval(parseISO(t.date), { start: dateRange.from, end: endOfDay(dateRange.to || dateRange.from) });
       
       return categoryFilterMatch && walletFilterMatch && dateFilterMatch;
     });
-  }, [selectedCategories, walletFilter, dateRange]);
+  }, [selectedCategories, selectedWallets, dateRange]);
 
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -70,8 +70,8 @@ export default function ReportsPage() {
         <ReportsFilter 
           selectedCategories={selectedCategories}
           onSelectedCategoriesChange={setSelectedCategories}
-          walletFilter={walletFilter}
-          onWalletFilterChange={setWalletFilter}
+          selectedWallets={selectedWallets}
+          onSelectedWalletsChange={setSelectedWallets}
           dateRange={dateRange}
           onDateRangeChange={setDateRange}
         />

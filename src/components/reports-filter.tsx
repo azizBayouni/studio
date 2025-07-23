@@ -3,13 +3,6 @@
 
 import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -25,8 +18,8 @@ import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-selec
 interface ReportsFilterProps {
   selectedCategories: string[];
   onSelectedCategoriesChange: (categories: string[]) => void;
-  walletFilter: string;
-  onWalletFilterChange: (wallet: string) => void;
+  selectedWallets: string[];
+  onSelectedWalletsChange: (wallets: string[]) => void;
   dateRange: DateRange | undefined;
   onDateRangeChange: (dateRange: DateRange | undefined) => void;
 }
@@ -34,8 +27,8 @@ interface ReportsFilterProps {
 export function ReportsFilter({
   selectedCategories,
   onSelectedCategoriesChange,
-  walletFilter,
-  onWalletFilterChange,
+  selectedWallets,
+  onSelectedWalletsChange,
   dateRange,
   onDateRangeChange,
 }: ReportsFilterProps) {
@@ -44,10 +37,15 @@ export function ReportsFilter({
     value: c.name,
     label: c.name,
   }));
+
+  const walletOptions: MultiSelectOption[] = wallets.map((w) => ({
+      value: w.name,
+      label: w.name,
+  }));
   
   const handleClearFilters = () => {
     onSelectedCategoriesChange([]);
-    onWalletFilterChange('all');
+    onSelectedWalletsChange([]);
     onDateRangeChange(undefined);
   };
 
@@ -62,19 +60,13 @@ export function ReportsFilter({
           placeholder="Filter by category"
         />
 
-        <Select value={walletFilter} onValueChange={onWalletFilterChange}>
-          <SelectTrigger className="md:w-[180px]">
-            <SelectValue placeholder="Wallet" />
-          </SelectTrigger>
-          <SelectContent>
-             <SelectItem value="all">All Wallets</SelectItem>
-            {wallets.map((wallet) => (
-              <SelectItem key={wallet.id} value={wallet.name}>
-                {wallet.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+            options={walletOptions}
+            selected={selectedWallets}
+            onChange={onSelectedWalletsChange}
+            className="md:w-[200px]"
+            placeholder="Filter by wallet"
+        />
 
         <Popover>
           <PopoverTrigger asChild>
