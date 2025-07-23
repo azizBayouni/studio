@@ -2,7 +2,7 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
 
 interface CategoryDonutChartProps {
     data: { name: string; value: number }[];
@@ -23,30 +23,40 @@ const COLORS = [
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
 
+  const chartConfig = data.reduce((acc, item, index) => {
+    acc[item.name] = {
+      label: item.name,
+      color: COLORS[index % COLORS.length],
+    };
+    return acc;
+  }, {} as ChartConfig);
+
   return (
     <div className="w-full h-64 relative">
-       <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip
-            cursor={{ fill: 'hsl(var(--muted))' }}
-            content={<ChartTooltipContent indicator="dot" nameKey="name" />}
-          />
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            innerRadius={60}
-            outerRadius={80}
-            paddingAngle={2}
-            dataKey="value"
-            nameKey="name"
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-        </PieChart>
-      </ResponsiveContainer>
+        <ChartContainer config={chartConfig} className="w-full h-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted))' }}
+                    content={<ChartTooltipContent indicator="dot" nameKey="name" />}
+                />
+                <Pie
+                    data={data}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    nameKey="name"
+                >
+                    {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                </Pie>
+                </PieChart>
+            </ResponsiveContainer>
+       </ChartContainer>
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
         <p className="text-sm text-muted-foreground">Total Expenses</p>
         <p className="font-bold text-lg">
@@ -56,6 +66,3 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
     </div>
   );
 }
-
-
-    
