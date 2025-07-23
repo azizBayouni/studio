@@ -2,8 +2,8 @@
 import { user, type User } from '@/lib/data';
 
 export function getUser(): User {
-  // In a real application, this would fetch from a database or API
-  return user;
+  // Return a copy to ensure React state updates are triggered correctly
+  return { ...user };
 }
 
 export function updateUser(updatedUser: Partial<User>): void {
