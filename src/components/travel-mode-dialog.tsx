@@ -29,7 +29,7 @@ import { currencies, events } from '@/lib/data';
 import type { DateRange } from "react-day-picker"
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { setTravelMode, disconnectTravelMode } from '@/services/travel-mode-service';
+import { setTravelMode, disconnectTravelMode, getTravelMode } from '@/services/travel-mode-service';
 
 interface TravelModeDialogProps {
   isOpen: boolean;
