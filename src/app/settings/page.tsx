@@ -376,7 +376,7 @@ export default function SettingsPage() {
                             Download Template
                         </Button>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 mt-4 sm:mt-0">
                         <h3 className="font-semibold">Export Data</h3>
                         <p className="text-sm text-muted-foreground mb-2">
                             Export all your transactions and categories into a single .xlsx file.

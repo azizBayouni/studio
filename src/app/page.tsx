@@ -132,7 +132,7 @@ export default function Dashboard() {
                 <MonthlyReportCard />
                 <TrendingReportCard />
             </div>
-            <Card className="col-span-4">
+            <Card className="lg:col-span-4">
               <CardHeader>
                 <CardTitle>Overview</CardTitle>
               </CardHeader>
@@ -140,7 +140,7 @@ export default function Dashboard() {
                 <Overview />
               </CardContent>
             </Card>
-            <Card className="col-span-4 lg:col-span-3">
+            <Card className="lg:col-span-3">
               <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>
