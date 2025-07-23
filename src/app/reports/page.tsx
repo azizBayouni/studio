@@ -11,8 +11,15 @@ import { transactions, categories, wallets as allWallets } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
 import { getDefaultCurrency } from '@/services/settings-service';
 import type { DateRange } from 'react-day-picker';
-import { parseISO, isWithinInterval, endOfDay, startOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter } from 'date-fns';
-import { ArrowRight, CalendarIcon, HelpCircle, Globe } from 'lucide-react';
+import { 
+  parseISO, isWithinInterval, endOfDay, startOfDay, subDays, 
+  startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, 
+  subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter, 
+  isSameDay, isSameWeek, isSameMonth, isSameQuarter, isSameYear,
+  addDays, addWeeks, addMonths, addQuarters, addYears,
+  format
+} from 'date-fns';
+import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { Progress } from '@/components/ui/progress';
@@ -24,9 +31,11 @@ export default function ReportsPage() {
   
   // State for filters
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
-  const [timeRange, setTimeRange] = useState<string>('this-month');
+  const [timeRange, setTimeRange] = useState<string>('week');
   const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(undefined);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [dateOffset, setDateOffset] = useState(0);
+
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -34,27 +43,34 @@ export default function ReportsPage() {
 
   const dateRange = useMemo(() => {
     const now = new Date();
+    let baseDate: Date;
+
     switch (timeRange) {
       case 'day':
-        return { from: startOfDay(now), to: endOfDay(now) };
+        baseDate = addDays(now, dateOffset);
+        return { from: startOfDay(baseDate), to: endOfDay(baseDate) };
       case 'week':
-        return { from: startOfWeek(now), to: endOfWeek(now) };
+        baseDate = addWeeks(now, dateOffset);
+        return { from: startOfWeek(baseDate), to: endOfWeek(baseDate) };
       case 'last-month':
         const lastMonth = subMonths(now, 1);
         return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
       case 'quarter':
-        return { from: startOfQuarter(now), to: endOfQuarter(now) };
+        baseDate = addQuarters(now, dateOffset);
+        return { from: startOfQuarter(baseDate), to: endOfQuarter(baseDate) };
       case 'year':
-        return { from: startOfYear(now), to: endOfYear(now) };
+        baseDate = addYears(now, dateOffset);
+        return { from: startOfYear(baseDate), to: endOfYear(baseDate) };
       case 'all':
         return { from: undefined, to: undefined };
       case 'custom':
         return customDateRange;
       case 'this-month':
       default:
-        return { from: startOfMonth(now), to: endOfMonth(now) };
+         baseDate = addMonths(now, dateOffset);
+        return { from: startOfMonth(baseDate), to: endOfMonth(baseDate) };
     }
-  }, [timeRange, customDateRange]);
+  }, [timeRange, customDateRange, dateOffset]);
   
   const reportableTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -127,7 +143,48 @@ export default function ReportsPage() {
       value
     }));
   }, [reportableTransactions]);
+  
+  const handleTimeRangeChange = (value: string) => {
+    setTimeRange(value);
+    setDateOffset(0); // Reset offset when range type changes
+  };
 
+  const getDateRangeLabel = () => {
+    if (!dateRange || !dateRange.from) return 'All Time';
+
+    const now = new Date();
+    const from = dateRange.from;
+
+    if (timeRange === 'day') {
+        if (isSameDay(now, from)) return 'Today';
+        if (isSameDay(subDays(now, 1), from)) return 'Yesterday';
+    }
+    if (timeRange === 'week') {
+        if (isSameWeek(now, from, { weekStartsOn: 1 })) return 'This Week';
+        if (isSameWeek(subDays(now, 7), from, { weekStartsOn: 1 })) return 'Last Week';
+    }
+    if (timeRange === 'this-month') {
+        if (isSameMonth(now, from)) return 'This Month';
+        if (isSameMonth(subMonths(now, 1), from)) return 'Last Month';
+    }
+     if (timeRange === 'quarter') {
+        if (isSameQuarter(now, from)) return 'This Quarter';
+        if (isSameQuarter(subQuarters(now, 1), from)) return 'Last Quarter';
+    }
+    if (timeRange === 'year') {
+        if (isSameYear(now, from)) return 'This Year';
+        if (isSameYear(subYears(now, 1), from)) return 'Last Year';
+    }
+
+    if (dateRange.to && !isSameDay(dateRange.from, dateRange.to)) {
+        return `${format(dateRange.from, 'dd MMM yy')} - ${format(dateRange.to, 'dd MMM yy')}`;
+    }
+    return format(dateRange.from, 'dd MMM yyyy');
+  };
+  
+  const canNavigate = useMemo(() => {
+    return !['all', 'custom', 'last-month'].includes(timeRange);
+  }, [timeRange]);
 
   return (
     <>
@@ -158,16 +215,16 @@ export default function ReportsPage() {
             />
        </header>
 
-      <div className="mt-4 flex items-center justify-center text-sm text-muted-foreground">
-        {dateRange?.from ? (
-            dateRange.to ? (
-                lightFormat(dateRange.from, 'dd MMM yyyy') + ' - ' + lightFormat(dateRange.to, 'dd MMM yyyy')
-            ) : (
-                lightFormat(dateRange.from, 'dd MMM yyyy')
-            )
-        ) : (
-          'All Time'
-        )}
+      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d - 1)} disabled={!canNavigate}>
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <div className="text-center font-semibold text-foreground">
+          {getDateRangeLabel()}
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d + 1)} disabled={!canNavigate}>
+            <ChevronRight className="h-5 w-5" />
+        </Button>
       </div>
       
       <div className="space-y-4">
@@ -237,7 +294,7 @@ export default function ReportsPage() {
       isOpen={isPickerOpen} 
       onOpenChange={setIsPickerOpen}
       value={timeRange}
-      onChange={setTimeRange}
+      onChange={handleTimeRangeChange}
       onCustomDateChange={setCustomDateRange}
     />
     </>
