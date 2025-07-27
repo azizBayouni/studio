@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    # Build the Next.js app using the Dockerfile in the current directory
+    build: .
+    # Name the container for easy identification
+    container_name: expensewise-app
+    # Forward port 9002 from the host to the container's port 9002
+    ports:
+      - "9002:9002"
+    # Ensure this app starts after the emulators are up
+    depends_on:
+      - firebase-emulators
+    # Define environment variables needed by the app
+    environment:
+      - NODE_ENV=development
+    # Make the app part of the same network as the emulators
+    networks:
+      - expensewise-net
+
+  firebase-emulators:
+    # Use the official Google Cloud SDK image that includes Firebase emulators
+    image: google/cloud-sdk:emulators
+    # Name the container
+    container_name: expensewise-firebase-emulators
+    # The command to start the emulators
+    command: >
+      gcloud emulators firestore start --host-port=0.0.0.0:8080 --project=expensewise-835o8 &
+      gcloud emulators auth start --host-port=0.0.0.0:9099 --project=expensewise-835o8 &
+      gcloud emulators storage start --host-port=0.0.0.0:9199 --project=expensewise-835o8
+    # Expose emulator ports to the host machine
+    ports:
+      - "4000:4000" # Emulator Suite UI
+      - "8080:8080" # Firestore Emulator
+      - "9099:9099" # Auth Emulator
+      - "9199:9199" # Storage Emulator
+    # Make the emulators part of the same network
+    networks:
+      - expensewise-net
+
+networks:
+  expensewise-net:
+    driver: bridge
