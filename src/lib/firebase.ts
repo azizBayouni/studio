@@ -1,16 +1,9 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from "firebase/app";
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  "projectId": "expensewise-835o8",
-  "appId": "1:316499927361:web:064df7d6d45f74da10c1c0",
-  "storageBucket": "expensewise-835o8.firebasestorage.app",
-  "apiKey": "AIzaSyDCpXN5abOH2ghLPJJoD357_jqiT0rQtmU",
-  "authDomain": "expensewise-835o8.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "316499927361"
-};
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { firebaseConfig } from "./firebase-config";
 
 // Initialize Firebase
 let app;
@@ -20,5 +13,18 @@ if (!getApps().length) {
     app = getApp();
 }
 
+const auth = getAuth(app);
+const firestore = getFirestore(app);
+const storage = getStorage(app);
 
-export default app;
+// Connect to emulators if in development
+if (process.env.NODE_ENV === 'development') {
+    // Point to the emulators running on your local machine
+    // Note: If your container has a different networking setup,
+    // you might need to change 'localhost' to the host machine's IP.
+    connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
+    connectFirestoreEmulator(firestore, "localhost", 8080);
+    connectStorageEmulator(storage, "localhost", 9199);
+}
+
+export { app, auth, firestore, storage };
