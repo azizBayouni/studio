@@ -27,13 +27,23 @@ import { getDefaultCurrency } from '@/services/settings-service';
 import { MonthlyReportCard } from '@/components/monthly-report-card';
 import { TrendingReportCard } from '@/components/trending-report-card';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
+import { useAuth } from '@/components/auth-provider';
+import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+  
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
@@ -59,6 +69,10 @@ export default function Dashboard() {
     setSelectedTransaction(transaction);
     setIsEditDialogOpen(true);
   };
+
+  if (loading || !user) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <>

@@ -22,10 +22,12 @@ import {
   LayoutGrid,
   CalendarDays,
 } from 'lucide-react';
+import { useAuth } from './auth-provider';
 
 export function MainNav() {
   const pathname = usePathname();
-
+  const { user, loading } = useAuth();
+  
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/transactions', label: 'Transactions', icon: ArrowRightLeft },
@@ -35,6 +37,10 @@ export function MainNav() {
     { href: '/wallets', label: 'Wallets', icon: Wallet },
     { href: '/events', label: 'Events', icon: CalendarDays },
   ];
+  
+  if (loading || !user) {
+    return null; // Don't render sidebar if loading or not logged in
+  }
 
   return (
     <>
