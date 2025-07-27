@@ -19,12 +19,13 @@ const storage = getStorage(app);
 
 // Connect to emulators if in development
 if (process.env.NODE_ENV === 'development') {
-    // Point to the emulators running on your local machine
-    // Note: If your container has a different networking setup,
-    // you might need to change 'localhost' to the host machine's IP.
-    connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
-    connectFirestoreEmulator(firestore, "localhost", 8080);
-    connectStorageEmulator(storage, "localhost", 9199);
+    // When running inside a Docker container, we use the service name 'firebase-emulators'
+    // to connect to the emulators on the Docker network.
+    // 'localhost' would refer to the app container itself.
+    const emulatorHost = "firebase-emulators";
+    connectAuthEmulator(auth, `http://${emulatorHost}:9099`, { disableWarnings: true });
+    connectFirestoreEmulator(firestore, emulatorHost, 8080);
+    connectStorageEmulator(storage, emulatorHost, 9199);
 }
 
 export { app, auth, firestore, storage };
