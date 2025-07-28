@@ -15,11 +15,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { signInWithEmail, continueWithGoogle } from '@/services/auth-service';
+import { signInWithUsername } from '@/services/auth-service';
 import { useAuth } from '@/components/auth-provider';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -36,7 +36,7 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
     try {
-      await signInWithEmail(email, password);
+      await signInWithUsername(username, password);
       toast({
         title: 'Login Successful',
         description: 'Welcome back!',
@@ -53,23 +53,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-        await continueWithGoogle();
-        toast({
-            title: 'Login Successful',
-            description: 'Welcome!',
-        });
-        router.push('/');
-    } catch (error: any) {
-        toast({
-            title: 'Google Sign-In Failed',
-            description: error.message,
-            variant: 'destructive',
-        });
-    }
-  };
-
   if (loading || user) {
     return <div>Loading...</div>; // Or a spinner
   }
@@ -80,20 +63,20 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your username below to login to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
+                id="username"
+                type="text"
+                placeholder="john.doe"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
@@ -110,9 +93,6 @@ export default function LoginPage() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Logging in...' : 'Login'}
-            </Button>
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} type="button">
-              Login with Google
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

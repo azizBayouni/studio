@@ -11,10 +11,13 @@ import {
   type User
 } from 'firebase/auth';
 
-export const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<User> => {
+const createEmailFromUsername = (username: string) => `${username}@expensewise.app`;
+
+export const signUpWithUsername = async (username: string, password: string): Promise<User> => {
+  const email = createEmailFromUsername(username);
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(userCredential.user, { displayName });
+    await updateProfile(userCredential.user, { displayName: username });
     return userCredential.user;
   } catch (error) {
     console.error("Error signing up:", error);
@@ -22,7 +25,8 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
   }
 };
 
-export const signInWithEmail = async (email: string, password: string): Promise<User> => {
+export const signInWithUsername = async (username: string, password: string): Promise<User> => {
+  const email = createEmailFromUsername(username);
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
