@@ -10,6 +10,7 @@ services:
       - firebase-emulators
     environment:
       - NODE_ENV=development
+      - DOCKER_ENV=true
     networks:
       - expensewise-net
 
