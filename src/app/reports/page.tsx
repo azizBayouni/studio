@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -208,7 +209,7 @@ export default function ReportsPage() {
                 options={walletOptions}
                 selected={selectedWallets}
                 onChange={setSelectedWallets}
-                className="w-auto"
+                className="w-full sm:w-auto"
                 placeholder="Total"
             />
        </header>
@@ -298,5 +299,3 @@ export default function ReportsPage() {
     </>
   );
 }
-
-    

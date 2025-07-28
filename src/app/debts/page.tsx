@@ -36,7 +36,7 @@ export default function DebtsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-       <div className="flex items-center justify-between space-y-2">
+       <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Debts</h2>
           <p className="text-muted-foreground">
@@ -61,7 +61,7 @@ export default function DebtsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Person/Entity</TableHead>
-                  <TableHead>Due Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Due Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
@@ -70,7 +70,7 @@ export default function DebtsPage() {
                 {payables.map((debt) => (
                   <TableRow key={debt.id}>
                     <TableCell className="font-medium">{debt.person}</TableCell>
-                    <TableCell>{debt.dueDate}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
                     <TableCell>
                       <Badge variant={debt.status === 'paid' ? 'secondary' : 'destructive'}>{debt.status}</Badge>
                     </TableCell>
@@ -89,7 +89,7 @@ export default function DebtsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Person/Entity</TableHead>
-                  <TableHead>Due Date</TableHead>
+                  <TableHead className="hidden sm:table-cell">Due Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
@@ -98,7 +98,7 @@ export default function DebtsPage() {
                 {receivables.map((debt) => (
                   <TableRow key={debt.id}>
                     <TableCell className="font-medium">{debt.person}</TableCell>
-                    <TableCell>{debt.dueDate}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
                     <TableCell>
                        <Badge variant={debt.status === 'paid' ? 'secondary' : 'default'}>{debt.status}</Badge>
                     </TableCell>

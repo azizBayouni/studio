@@ -101,7 +101,7 @@ export default function TransactionsPage() {
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Transactions</h2>
             <p className="text-muted-foreground">
@@ -115,62 +115,64 @@ export default function TransactionsPage() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
-              <Input placeholder="Search by description or category..." className="max-w-sm" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              <MultiSelect
-                options={categoryOptions}
-                selected={selectedCategories}
-                onChange={setSelectedCategories}
-                className="md:w-[250px]"
-                placeholder="Filter by category"
-              />
-              <Select value={walletFilter} onValueChange={setWalletFilter}>
-                <SelectTrigger className="md:w-[180px]">
-                  <SelectValue placeholder="Filter by wallet" />
-                </SelectTrigger>
-                <SelectContent>
-                   <SelectItem value="all">All Wallets</SelectItem>
-                  {wallets.map((wallet) => (
-                      <SelectItem key={wallet.id} value={wallet.name}>{wallet.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-               <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant={'outline'}
-                    className={cn(
-                      'w-full md:w-auto justify-start text-left font-normal',
-                      !dateRange && 'text-muted-foreground'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, 'LLL dd, y')} -{' '}
-                          {format(dateRange.to, 'LLL dd, y')}
-                        </>
+          <div className="flex flex-col lg:flex-row gap-2">
+              <Input placeholder="Search by description or category..." className="w-full lg:max-w-xs" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full lg:w-auto">
+                <MultiSelect
+                  options={categoryOptions}
+                  selected={selectedCategories}
+                  onChange={setSelectedCategories}
+                  className="w-full"
+                  placeholder="Filter by category"
+                />
+                <Select value={walletFilter} onValueChange={setWalletFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Filter by wallet" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Wallets</SelectItem>
+                    {wallets.map((wallet) => (
+                        <SelectItem key={wallet.id} value={wallet.name}>{wallet.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant={'outline'}
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !dateRange && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange?.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, 'LLL dd, y')} -{' '}
+                            {format(dateRange.to, 'LLL dd, y')}
+                          </>
+                        ) : (
+                          format(dateRange.from, 'LLL dd, y')
+                        )
                       ) : (
-                        format(dateRange.from, 'LLL dd, y')
-                      )
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                    numberOfMonths={2}
-                  />
-                </PopoverContent>
-              </Popover>
+                        <span>Pick a date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange?.from}
+                      selected={dateRange}
+                      onSelect={setDateRange}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
           </div>
           <div className="rounded-md border overflow-x-auto">
             <Table>

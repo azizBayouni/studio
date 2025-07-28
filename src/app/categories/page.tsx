@@ -43,7 +43,7 @@ export default function CategoriesPage() {
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
             <p className="text-muted-foreground">
@@ -62,7 +62,7 @@ export default function CategoriesPage() {
               <TableRow>
                 <TableHead>Category</TableHead>
                 <TableHead>Type</TableHead>
-                <TableHead>Parent Category</TableHead>
+                <TableHead className="hidden sm:table-cell">Parent Category</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -80,7 +80,7 @@ export default function CategoriesPage() {
                       {category.type}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden sm:table-cell">
                     {category.parentId ? (
                        <Badge variant="outline">{getCategoryName(category.parentId)}</Badge>
                     ) : (

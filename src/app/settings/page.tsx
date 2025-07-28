@@ -361,27 +361,27 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Bulk Import / Export</CardTitle>
               <CardDescription>
-                Migrate your data from other services or download a backup of your data.
+                Migrate your data or download a backup.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                <div className="p-4 border rounded-lg flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-2">
                         <h3 className="font-semibold">Import Data</h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                            Download the CSV template, fill it, and upload it to import transactions.
+                        <p className="text-sm text-muted-foreground">
+                            Import transactions from a CSV template.
                         </p>
-                         <Button variant="outline" onClick={handleDownloadTemplate}>
+                         <Button variant="outline" onClick={handleDownloadTemplate} className="w-full sm:w-auto">
                             <Download className="mr-2 h-4 w-4" />
                             Download Template
                         </Button>
                     </div>
-                    <div className="flex-1 mt-4 sm:mt-0">
+                    <div className="flex-1 space-y-2 mt-4 sm:mt-0">
                         <h3 className="font-semibold">Export Data</h3>
-                        <p className="text-sm text-muted-foreground mb-2">
-                            Export all your transactions and categories into a single .xlsx file.
+                        <p className="text-sm text-muted-foreground">
+                            Export data to a single .xlsx file.
                         </p>
-                        <Button variant="outline" onClick={handleExport}>
+                        <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
                             <UploadCloud className="mr-2 h-4 w-4" />
                            Export All Data
                         </Button>
@@ -389,8 +389,8 @@ export default function SettingsPage() {
                </div>
               <div className="space-y-2">
                 <Label htmlFor="import-file">Upload CSV File for Import</Label>
-                <div className="flex items-center gap-2">
-                  <Input id="import-file" type="file" accept=".csv" className="max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <Input id="import-file" type="file" accept=".csv" className="w-full sm:max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
                 </div>
               </div>
             </CardContent>
