@@ -14,13 +14,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -30,7 +23,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { currencies } from '@/lib/data';
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultCurrency } from '@/services/settings-service';
@@ -122,21 +114,13 @@ export function AddDebtDialog({
               <Label htmlFor="name">Person / Entity</Label>
               <Input id="name" value={person} onChange={(e) => setPerson(e.target.value)} required placeholder="e.g. John Doe, Car Loan" />
             </div>
-            <div className="flex items-end gap-2">
-              <div className="space-y-2 flex-1">
-                <Label htmlFor="amount">Amount</Label>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <div className="flex items-center gap-2">
                 <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value ? parseFloat(e.target.value) : '')} required placeholder="100.00" />
-              </div>
-              <div className="space-y-2">
-                 <Label htmlFor="currency">Currency</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                 <div className="flex h-10 items-center justify-center rounded-md border border-input bg-background px-3 text-sm text-muted-foreground">
+                    {currency}
+                </div>
               </div>
             </div>
             <div className="space-y-2">
