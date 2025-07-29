@@ -23,11 +23,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { EditDebtDialog } from '@/components/edit-debt-dialog';
 
 export default function DebtsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [debts, setDebts] = useState([...allDebts]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedDebt, setSelectedDebt] = useState<Debt | null>(null);
 
 
   useEffect(() => {
@@ -54,9 +57,14 @@ export default function DebtsPage() {
   const handleDialogClose = () => {
     setDebts([...allDebts]);
   }
+  
+  const handleRowClick = (debt: Debt) => {
+    setSelectedDebt(debt);
+    setIsEditDialogOpen(true);
+  };
 
   const renderDebtRow = (debt: Debt) => (
-    <TableRow key={debt.id}>
+    <TableRow key={debt.id} onClick={() => handleRowClick(debt)} className="cursor-pointer">
       <TableCell className="font-medium flex items-center gap-2">
         {debt.person}
         {debt.note && (
@@ -148,6 +156,14 @@ export default function DebtsPage() {
             setIsAddDialogOpen(open);
             if (!open) handleDialogClose();
         }}
+     />
+     <EditDebtDialog
+        isOpen={isEditDialogOpen}
+        onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) handleDialogClose();
+        }}
+        debt={selectedDebt}
      />
     </>
   );
