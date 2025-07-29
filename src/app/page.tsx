@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -20,13 +20,14 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Wallet, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { Overview } from '@/components/overview';
-import { transactions, type Transaction } from '@/lib/data';
+import { transactions, wallets, debts as allDebts, type Transaction } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { MonthlyReportCard } from '@/components/monthly-report-card';
 import { TrendingReportCard } from '@/components/trending-report-card';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
+import { isThisMonth, parseISO } from 'date-fns';
 
 export default function Dashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -38,8 +39,33 @@ export default function Dashboard() {
     setDefaultCurrency(getDefaultCurrency());
   }, []);
 
-  const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
-  const recentTransactions = reportableTransactions.slice(0, 5);
+  const dashboardData = useMemo(() => {
+    const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
+    const thisMonthTransactions = reportableTransactions.filter(t => isThisMonth(parseISO(t.date)));
+
+    const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+    const monthlyIncome = thisMonthTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const monthlyExpense = thisMonthTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const activePayables = allDebts.filter(d => d.type === 'payable' && d.status === 'unpaid');
+    const activeReceivables = allDebts.filter(d => d.type === 'receivable' && d.status === 'unpaid');
+    const activeDebtsAmount = activePayables.reduce((sum, d) => sum + d.amount, 0);
+
+    return {
+        totalBalance,
+        monthlyIncome,
+        monthlyExpense,
+        activeDebtsAmount,
+        activePayablesCount: activePayables.length,
+        activeReceivablesCount: activeReceivables.length,
+        recentTransactions: reportableTransactions.slice(0, 5),
+        totalTransactionsThisMonth: reportableTransactions.length,
+    }
+  }, [transactions, wallets, allDebts]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -84,7 +110,7 @@ export default function Dashboard() {
                 <Wallet className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(45231.89)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(dashboardData.totalBalance)}</div>
                 <p className="text-xs text-muted-foreground">
                   Across all wallets
                 </p>
@@ -96,9 +122,9 @@ export default function Dashboard() {
                 <TrendingUp className="h-4 w-4 text-accent" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-accent">+{formatCurrency(2350.00)}</div>
+                <div className="text-2xl font-bold text-accent">+{formatCurrency(dashboardData.monthlyIncome)}</div>
                 <p className="text-xs text-muted-foreground">
-                  +18.1% from last month
+                  Based on reportable transactions
                 </p>
               </CardContent>
             </Card>
@@ -108,9 +134,9 @@ export default function Dashboard() {
                 <TrendingDown className="h-4 w-4 text-destructive" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-destructive">-{formatCurrency(4210.50)}</div>
-                <p className="text-xs text-muted-foreground">
-                  +2.5% from last month
+                <div className="text-2xl font-bold text-destructive">-{formatCurrency(dashboardData.monthlyExpense)}</div>
+                 <p className="text-xs text-muted-foreground">
+                   Based on reportable transactions
                 </p>
               </CardContent>
             </Card>
@@ -120,9 +146,9 @@ export default function Dashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(1200.00)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(dashboardData.activeDebtsAmount)}</div>
                 <p className="text-xs text-muted-foreground">
-                  3 Payable, 1 Receivable
+                  {dashboardData.activePayablesCount} Payable, {dashboardData.activeReceivablesCount} Receivable
                 </p>
               </CardContent>
             </Card>
@@ -144,7 +170,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>
-                  You made {reportableTransactions.length} transactions this month.
+                  You made {dashboardData.totalTransactionsThisMonth} transactions this month.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -157,7 +183,7 @@ export default function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {recentTransactions.map((transaction) => (
+                    {dashboardData.recentTransactions.map((transaction) => (
                        <TableRow key={transaction.id} onClick={() => handleRowClick(transaction)} className="cursor-pointer">
                          <TableCell>
                            <div className="font-medium">{transaction.category}</div>
