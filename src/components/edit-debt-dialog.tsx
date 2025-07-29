@@ -31,14 +31,15 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { CalendarIcon, Trash2, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { updateDebt, deleteDebt } from '@/services/debt-service';
+import { updateDebt, deleteDebt, addPaymentToDebt } from '@/services/debt-service';
 import { Textarea } from './ui/textarea';
-import type { Debt } from '@/lib/data';
+import type { Debt, Payment } from '@/lib/data';
+import { Separator } from './ui/separator';
 
 interface EditDebtDialogProps {
   isOpen: boolean;
@@ -57,8 +58,19 @@ export function EditDebtDialog({
   const [currency, setCurrency] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [note, setNote] = useState('');
-  const [status, setStatus] = useState<'paid' | 'unpaid'>('unpaid');
+  const [status, setStatus] = useState<'paid' | 'unpaid' | 'partial'>('unpaid');
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [newPaymentAmount, setNewPaymentAmount] = useState<number | ''>('');
   const { toast } = useToast();
+
+  const totalPaid = useMemo(() => {
+    return payments.reduce((sum, p) => sum + p.amount, 0);
+  }, [payments]);
+
+  const remainingAmount = useMemo(() => {
+    const originalAmount = Number(amount) || 0;
+    return originalAmount - totalPaid;
+  }, [amount, totalPaid]);
 
   useEffect(() => {
     if (debt) {
@@ -69,7 +81,9 @@ export function EditDebtDialog({
       setDueDate(parseISO(debt.dueDate));
       setNote(debt.note || '');
       setStatus(debt.status);
+      setPayments(debt.payments || []);
     }
+    setNewPaymentAmount('');
   }, [debt, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,6 +106,7 @@ export function EditDebtDialog({
       dueDate: format(dueDate, 'yyyy-MM-dd'),
       note,
       status,
+      payments,
     };
     
     updateDebt(updatedDebt);
@@ -116,6 +131,26 @@ export function EditDebtDialog({
     }
   };
 
+  const handleAddPayment = () => {
+    if (debt && newPaymentAmount) {
+      const paymentValue = Number(newPaymentAmount);
+      if (paymentValue <= 0) {
+        toast({ title: "Invalid Amount", description: "Payment must be positive.", variant: "destructive" });
+        return;
+      }
+      if (paymentValue > remainingAmount) {
+        toast({ title: "Overpayment", description: "Payment cannot exceed remaining amount.", variant: "destructive" });
+        return;
+      }
+      addPaymentToDebt(debt.id, paymentValue);
+      // Refresh local state from the "source of truth"
+      setPayments([...debt.payments]);
+      setStatus(debt.status);
+      setNewPaymentAmount('');
+      toast({ title: "Payment Added", description: "The partial payment has been recorded." });
+    }
+  };
+
   if (!debt) return null;
   
   return (
@@ -125,10 +160,59 @@ export function EditDebtDialog({
           <DialogHeader>
             <DialogTitle>Edit Debt</DialogTitle>
             <DialogDescription>
-              Update the details of this debt record.
+              Update details or add payments for this debt.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="space-y-2">
+              <Label>Remaining Balance</Label>
+              <p className="text-2xl font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(remainingAmount)}</p>
+              <p className="text-sm text-muted-foreground">
+                Originally {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount))}
+              </p>
+            </div>
+
+            <Separator />
+            
+            {status !== 'paid' && (
+                <div className="space-y-3 p-3 bg-muted/50 rounded-lg">
+                    <Label>Add a Payment</Label>
+                    <div className="flex items-center gap-2">
+                        <Input 
+                            type="number" 
+                            placeholder="Enter amount" 
+                            value={newPaymentAmount}
+                            onChange={(e) => setNewPaymentAmount(e.target.value ? parseFloat(e.target.value) : '')}
+                            max={remainingAmount}
+                        />
+                        <Button type="button" onClick={handleAddPayment}>
+                            <PlusCircle className="mr-2 h-4 w-4"/> Add
+                        </Button>
+                    </div>
+                </div>
+            )}
+            
+            {payments.length > 0 && (
+                <div className="space-y-2">
+                    <Label>Payment History</Label>
+                    <div className="space-y-2 rounded-md border p-2">
+                        {payments.map(p => (
+                            <div key={p.id} className="flex justify-between items-center text-sm">
+                                <span>{format(parseISO(p.date), 'dd MMM yyyy')}</span>
+                                <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(p.amount)}</span>
+                            </div>
+                        ))}
+                         <Separator />
+                         <div className="flex justify-between items-center text-sm font-semibold">
+                            <span>Total Paid</span>
+                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(totalPaid)}</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <Separator />
+
              <div className="space-y-2">
               <Label>Type</Label>
               <RadioGroup value={type} onValueChange={(value) => setType(value as 'payable' | 'receivable')} className="flex gap-4">
@@ -147,7 +231,7 @@ export function EditDebtDialog({
               <Input id="edit-name" value={person} onChange={(e) => setPerson(e.target.value)} required placeholder="e.g. John Doe, Car Loan" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-amount">Amount</Label>
+              <Label htmlFor="edit-amount">Original Amount</Label>
               <div className="flex items-center gap-2">
                 <Input id="edit-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value ? parseFloat(e.target.value) : '')} required placeholder="100.00" />
                  <div className="flex h-10 items-center justify-center rounded-md border border-input bg-background px-3 text-sm text-muted-foreground">
@@ -187,10 +271,14 @@ export function EditDebtDialog({
             </div>
              <div className="space-y-2">
               <Label>Status</Label>
-              <RadioGroup value={status} onValueChange={(value) => setStatus(value as 'paid' | 'unpaid')} className="flex gap-4">
+              <RadioGroup value={status} onValueChange={(value) => setStatus(value as 'paid' | 'unpaid' | 'partial')} className="flex gap-4">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="unpaid" id="unpaid" />
                   <Label htmlFor="unpaid">Unpaid</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="partial" id="partial" />
+                  <Label htmlFor="partial">Partial</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="paid" id="paid" />
@@ -199,7 +287,7 @@ export function EditDebtDialog({
               </RadioGroup>
             </div>
           </div>
-          <DialogFooter className="sm:justify-between">
+          <DialogFooter className="sm:justify-between pt-4 border-t">
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button type="button" variant="destructive">

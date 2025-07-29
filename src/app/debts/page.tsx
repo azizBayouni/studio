@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -63,7 +63,21 @@ export default function DebtsPage() {
     setIsEditDialogOpen(true);
   };
 
-  const renderDebtRow = (debt: Debt) => (
+  const getRemainingAmount = (debt: Debt) => {
+    const totalPaid = debt.payments.reduce((sum, p) => sum + p.amount, 0);
+    return debt.amount - totalPaid;
+  };
+  
+  const getStatusBadgeVariant = (status: Debt['status'], type: Debt['type']) => {
+    if (status === 'paid') return 'secondary';
+    if (status === 'partial') return 'default';
+    return type === 'payable' ? 'destructive' : 'default';
+  }
+
+  const renderDebtRow = (debt: Debt) => {
+    const remainingAmount = getRemainingAmount(debt);
+    
+    return (
     <TableRow key={debt.id} onClick={() => handleRowClick(debt)} className="cursor-pointer">
       <TableCell className="font-medium flex items-center gap-2">
         {debt.person}
@@ -82,15 +96,24 @@ export default function DebtsPage() {
       </TableCell>
       <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
       <TableCell>
-        <Badge variant={debt.status === 'paid' ? 'secondary' : (debt.type === 'payable' ? 'destructive' : 'default')}>
+        <Badge variant={getStatusBadgeVariant(debt.status, debt.type)} className={debt.status === 'partial' ? 'bg-primary/80' : ''}>
           {debt.status}
         </Badge>
       </TableCell>
-      <TableCell className={`text-right font-medium ${debt.type === 'payable' ? 'text-destructive' : 'text-accent'}`}>
-        {debt.type === 'payable' ? '-' : '+'}{formatCurrency(debt.amount, debt.currency)}
+      <TableCell className={`text-right font-medium`}>
+        <div className="flex flex-col items-end">
+            <span className={`${debt.type === 'payable' ? 'text-destructive' : 'text-accent'}`}>
+                 {debt.type === 'payable' ? '-' : '+'}{formatCurrency(remainingAmount, debt.currency)}
+            </span>
+            {debt.status === 'partial' && (
+                <span className="text-xs text-muted-foreground">
+                    of {formatCurrency(debt.amount, debt.currency)}
+                </span>
+            )}
+        </div>
       </TableCell>
     </TableRow>
-  );
+  )};
 
   return (
     <>

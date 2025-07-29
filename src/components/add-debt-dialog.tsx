@@ -56,7 +56,7 @@ export function AddDebtDialog({
       setDueDate(new Date());
       setNote('');
     }
-  }, [isOpen]);
+  }, [isOpen, getDefaultCurrency]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
