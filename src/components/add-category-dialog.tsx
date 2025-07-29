@@ -26,20 +26,22 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { categories, emojiIcons, type Category } from '@/lib/data';
+import { emojiIcons, type Category } from '@/lib/data';
 import { addCategory, getCategoryDepth } from '@/services/category-service';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils';
 
 interface AddCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
+  allCategories: Category[];
 }
 
 export function AddCategoryDialog({
   isOpen,
   onOpenChange,
+  allCategories
 }: AddCategoryDialogProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -47,6 +49,16 @@ export function AddCategoryDialog({
   const [icon, setIcon] = useState<string>('🤔');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+        // Reset form when dialog opens
+        setName('');
+        setType('expense');
+        setParentId(null);
+        setIcon('🤔');
+    }
+  }, [isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,11 +74,6 @@ export function AddCategoryDialog({
           description: `The category "${name}" has been created.`,
       })
       onOpenChange(false);
-      // Reset form
-      setName('');
-      setType('expense');
-      setParentId(null);
-      setIcon('🤔');
     } catch (error: any) {
        toast({
         title: "Failed to Add Category",
@@ -78,8 +85,8 @@ export function AddCategoryDialog({
   
   const parentCategoryOptions = useMemo(() => {
     // Only allow nesting up to 2 levels deep (so parent can be level 1 or 2)
-    return categories.filter(c => getCategoryDepth(c.id) < 2);
-  }, []);
+    return allCategories.filter(c => getCategoryDepth(c.id) < 2);
+  }, [allCategories]);
 
   const renderParentCategoryOptions = () => {
     const topLevelCategories = parentCategoryOptions.filter(c => c.parentId === null);

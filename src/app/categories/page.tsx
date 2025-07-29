@@ -30,7 +30,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EditCategoryDialog } from '@/components/edit-category-dialog';
 import { AddCategoryDialog } from '@/components/add-category-dialog';
@@ -41,6 +40,7 @@ export default function CategoriesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [_, setForceRender] = useState(0); // Used to force re-render on delete
   const { toast } = useToast();
 
   const getCategoryName = (id: string | null): string => {
@@ -71,6 +71,8 @@ export default function CategoriesPage() {
         title: "Category Deleted",
         description: "The category and its sub-categories have been deleted.",
       });
+      // Force a re-render to update the category list everywhere
+      setForceRender(Math.random()); 
     } catch (error: any) {
        toast({
         title: "Deletion Failed",
@@ -80,7 +82,7 @@ export default function CategoriesPage() {
     }
   };
   
-  const sortedCategories = categories.sort((a, b) => {
+  const sortedCategories = [...categories].sort((a, b) => {
     const pathA = getCategoryPath(a.id);
     const pathB = getCategoryPath(b.id);
     return pathA.localeCompare(pathB);
@@ -196,6 +198,7 @@ export default function CategoriesPage() {
       <AddCategoryDialog
         isOpen={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
+        allCategories={categories}
       />
     </>
   );
