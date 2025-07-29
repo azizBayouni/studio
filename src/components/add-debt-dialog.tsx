@@ -1,0 +1,178 @@
+
+'use client';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { currencies } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import { getDefaultCurrency } from '@/services/settings-service';
+import { addDebt } from '@/services/debt-service';
+
+interface AddDebtDialogProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function AddDebtDialog({
+  isOpen,
+  onOpenChange,
+}: AddDebtDialogProps) {
+  const [type, setType] = useState<'payable' | 'receivable'>('payable');
+  const [person, setPerson] = useState('');
+  const [amount, setAmount] = useState<number | ''>('');
+  const [currency, setCurrency] = useState(getDefaultCurrency());
+  const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form when dialog opens
+      setType('payable');
+      setPerson('');
+      setAmount('');
+      setCurrency(getDefaultCurrency());
+      setDueDate(new Date());
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!person || !amount || !dueDate) {
+        toast({
+            title: "Missing Fields",
+            description: "Please fill out all required fields.",
+            variant: "destructive"
+        });
+        return;
+    }
+
+    addDebt({
+      type,
+      person,
+      amount: Number(amount),
+      currency,
+      dueDate: format(dueDate, 'yyyy-MM-dd'),
+      status: 'unpaid', // New debts are always unpaid
+    });
+    
+    toast({
+        title: "Debt Added",
+        description: `The debt for "${person}" has been created.`,
+    });
+
+    onOpenChange(false);
+  };
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Add New Debt</DialogTitle>
+            <DialogDescription>
+              Record a new payable or receivable debt.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+             <div className="space-y-2">
+              <Label>Type</Label>
+              <RadioGroup value={type} onValueChange={(value) => setType(value as 'payable' | 'receivable')} className="flex gap-4">
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="payable" id="payable" />
+                  <Label htmlFor="payable">Payable (I owe)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="receivable" id="receivable" />
+                  <Label htmlFor="receivable">Receivable (I am owed)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Person / Entity</Label>
+              <Input id="name" value={person} onChange={(e) => setPerson(e.target.value)} required placeholder="e.g. John Doe, Car Loan" />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="space-y-2 flex-1">
+                <Label htmlFor="amount">Amount</Label>
+                <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value ? parseFloat(e.target.value) : '')} required placeholder="100.00" />
+              </div>
+              <div className="space-y-2">
+                 <Label htmlFor="currency">Currency</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="due-date">Due Date</Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                        id="due-date"
+                        variant={'outline'}
+                        className={cn(
+                            'w-full justify-start text-left font-normal',
+                            !dueDate && 'text-muted-foreground'
+                        )}
+                        >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                        <Calendar
+                        mode="single"
+                        selected={dueDate}
+                        onSelect={setDueDate}
+                        initialFocus
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="submit">Save Debt</Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

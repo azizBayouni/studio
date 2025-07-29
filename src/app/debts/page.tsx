@@ -13,15 +13,26 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { debts } from '@/lib/data';
+import { debts as allDebts, type Debt } from '@/lib/data';
 import { PlusCircle } from 'lucide-react';
 import { getDefaultCurrency } from '@/services/settings-service';
+import { AddDebtDialog } from '@/components/add-debt-dialog';
 
 export default function DebtsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [debts, setDebts] = useState([...allDebts]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
+    
+    const handleDataChange = () => {
+        setDebts([...allDebts]);
+    }
+    window.addEventListener('debtsUpdated', handleDataChange);
+    return () => window.removeEventListener('debtsUpdated', handleDataChange);
+
   }, []);
 
   const payables = debts.filter((d) => d.type === 'payable');
@@ -33,8 +44,13 @@ export default function DebtsPage() {
       currency: currency,
     }).format(amount);
   };
+  
+  const handleDialogClose = () => {
+    setDebts([...allDebts]);
+  }
 
   return (
+    <>
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
        <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-2 md:space-y-0">
         <div>
@@ -44,7 +60,7 @@ export default function DebtsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-            <Button>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Add Debt
             </Button>
         </div>
@@ -113,5 +129,13 @@ export default function DebtsPage() {
         </TabsContent>
       </Tabs>
     </div>
+     <AddDebtDialog
+        isOpen={isAddDialogOpen}
+        onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (!open) handleDialogClose();
+        }}
+     />
+    </>
   );
 }
