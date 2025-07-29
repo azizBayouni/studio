@@ -60,6 +60,7 @@ export type Debt = {
   currency: string;
   dueDate: string;
   status: 'paid' | 'unpaid';
+  note?: string;
 };
 
 export type Event = {
@@ -114,7 +115,7 @@ export const wallets: Wallet[] = [
 ];
 
 export const debts: Debt[] = [
-  { id: 'd1', type: 'payable', person: 'John Doe', amount: 500, currency: 'USD', dueDate: '2024-08-01', status: 'unpaid' },
+  { id: 'd1', type: 'payable', person: 'John Doe', amount: 500, currency: 'USD', dueDate: '2024-08-01', status: 'unpaid', note: 'For concert tickets' },
   { id: 'd2', type: 'receivable', person: 'Jane Smith', amount: 250, currency: 'USD', dueDate: '2024-08-15', status: 'unpaid' },
   { id: 'd3', type: 'payable', person: 'Car Loan', amount: 350, currency: 'USD', dueDate: '2024-07-30', status: 'unpaid' },
   { id: 'd4', type: 'payable', person: 'Alice', amount: 100, currency: 'USD', dueDate: '2024-07-25', status: 'paid' },
@@ -151,7 +152,7 @@ export const getWalletBalance = (walletName: string) => {
     if (!wallet) return 0;
 
     // Start with the wallet's initial balance
-    const initialBalance = wallet.balance;
+    const initialBalance = wallet.balance || 0;
 
     const relevantTransactions = transactions.filter(t => t.wallet === walletName);
     
@@ -164,6 +165,5 @@ export const getWalletBalance = (walletName: string) => {
     }, 0);
 
     // Return initial balance + transaction effect.
-    // Note: For this to be accurate, the `wallet.balance` must be the *initial* balance, not a running total.
     return initialBalance + transactionNet;
 }

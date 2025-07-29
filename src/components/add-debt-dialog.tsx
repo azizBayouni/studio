@@ -35,6 +35,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultCurrency } from '@/services/settings-service';
 import { addDebt } from '@/services/debt-service';
+import { Textarea } from './ui/textarea';
 
 interface AddDebtDialogProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export function AddDebtDialog({
   const [amount, setAmount] = useState<number | ''>('');
   const [currency, setCurrency] = useState(getDefaultCurrency());
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
+  const [note, setNote] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,6 +62,7 @@ export function AddDebtDialog({
       setAmount('');
       setCurrency(getDefaultCurrency());
       setDueDate(new Date());
+      setNote('');
     }
   }, [isOpen]);
 
@@ -80,7 +83,7 @@ export function AddDebtDialog({
       amount: Number(amount),
       currency,
       dueDate: format(dueDate, 'yyyy-MM-dd'),
-      status: 'unpaid', // New debts are always unpaid
+      note,
     });
     
     toast({
@@ -161,6 +164,10 @@ export function AddDebtDialog({
                         />
                     </PopoverContent>
                 </Popover>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="note">Note (Optional)</Label>
+                <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. For concert tickets" />
             </div>
           </div>
           <DialogFooter>

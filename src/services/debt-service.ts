@@ -1,11 +1,12 @@
 
 import { debts, type Debt } from '@/lib/data';
 
-export function addDebt(newDebtData: Omit<Debt, 'id'>): void {
+export function addDebt(newDebtData: Omit<Debt, 'id' | 'status'>): void {
     const newId = 'd' + (Math.max(0, ...debts.map(d => parseInt(d.id.substring(1)))) + 1).toString();
     const newDebt: Debt = {
         ...newDebtData,
         id: newId,
+        status: 'unpaid',
     };
     debts.unshift(newDebt);
     window.dispatchEvent(new Event('debtsUpdated'));

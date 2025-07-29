@@ -14,9 +14,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { debts as allDebts, type Debt } from '@/lib/data';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Info } from 'lucide-react';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { AddDebtDialog } from '@/components/add-debt-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function DebtsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
@@ -48,6 +54,35 @@ export default function DebtsPage() {
   const handleDialogClose = () => {
     setDebts([...allDebts]);
   }
+
+  const renderDebtRow = (debt: Debt) => (
+    <TableRow key={debt.id}>
+      <TableCell className="font-medium flex items-center gap-2">
+        {debt.person}
+        {debt.note && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{debt.note}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
+      <TableCell>
+        <Badge variant={debt.status === 'paid' ? 'secondary' : (debt.type === 'payable' ? 'destructive' : 'default')}>
+          {debt.status}
+        </Badge>
+      </TableCell>
+      <TableCell className={`text-right font-medium ${debt.type === 'payable' ? 'text-destructive' : 'text-accent'}`}>
+        {debt.type === 'payable' ? '-' : '+'}{formatCurrency(debt.amount, debt.currency)}
+      </TableCell>
+    </TableRow>
+  );
 
   return (
     <>
@@ -83,18 +118,7 @@ export default function DebtsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {payables.map((debt) => (
-                  <TableRow key={debt.id}>
-                    <TableCell className="font-medium">{debt.person}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
-                    <TableCell>
-                      <Badge variant={debt.status === 'paid' ? 'secondary' : 'destructive'}>{debt.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-destructive">
-                      -{formatCurrency(debt.amount, debt.currency)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {payables.map(renderDebtRow)}
               </TableBody>
             </Table>
           </div>
@@ -111,18 +135,7 @@ export default function DebtsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {receivables.map((debt) => (
-                  <TableRow key={debt.id}>
-                    <TableCell className="font-medium">{debt.person}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{debt.dueDate}</TableCell>
-                    <TableCell>
-                       <Badge variant={debt.status === 'paid' ? 'secondary' : 'default'}>{debt.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-medium text-accent">
-                      +{formatCurrency(debt.amount, debt.currency)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {receivables.map(renderDebtRow)}
               </TableBody>
             </Table>
           </div>
