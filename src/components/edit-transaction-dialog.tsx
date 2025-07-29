@@ -42,7 +42,7 @@ import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { categories, wallets, currencies, events } from '@/lib/data';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
@@ -51,6 +51,7 @@ import { getDefaultCurrency } from '@/services/settings-service';
 import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getCategoryDepth } from '@/services/category-service';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -68,7 +69,6 @@ export function EditTransactionDialog({
   const [originalAmount, setOriginalAmount] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
-  const [subCategory, setSubCategory] = useState<string | undefined>(undefined);
   const [wallet, setWallet] = useState('');
   const [date, setDate] = useState<Date | undefined>();
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -145,7 +145,6 @@ export function EditTransactionDialog({
       
       setDescription(transaction.description || '');
       setCategory(transaction.category);
-      setSubCategory(transaction.subCategory);
       setWallet(transaction.wallet);
       setDate(parseISO(transaction.date));
       setAttachments(transaction.attachments || []);
@@ -197,7 +196,6 @@ export function EditTransactionDialog({
         type,
         description,
         category,
-        subCategory,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
         currency: defaultCurrency, // Always save in default currency
@@ -238,27 +236,52 @@ export function EditTransactionDialog({
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
+  
+  const selectableCategories = useMemo(() => {
+    return categories.filter(c => {
+      const depth = getCategoryDepth(c.id);
+      return depth > 0;
+    });
+  }, []);
 
   const renderCategoryOptions = () => {
-    const parentCategories = categories.filter(c => c.parentId === null);
-    const options: JSX.Element[] = [];
+    const topLevelCategories = categories.filter(c => c.parentId === null);
 
-    parentCategories.forEach(parent => {
-      options.push(
-        <SelectItem key={parent.id} value={parent.name} className="font-bold">
-          {parent.name}
-        </SelectItem>
-      );
-      const subCategories = categories.filter(c => c.parentId === parent.id);
-      subCategories.forEach(sub => {
-        options.push(
-          <SelectItem key={sub.id} value={sub.name} className="pl-8">
-            {sub.name}
-          </SelectItem>
-        );
-      });
+    const getOptionsForParent = (parentId: string | null, level: number): JSX.Element[] => {
+        return categories
+            .filter(c => c.parentId === parentId)
+            .flatMap(c => {
+                const isSelectable = getCategoryDepth(c.id) > 0;
+                const option = (
+                    <SelectItem
+                        key={c.id}
+                        value={c.name}
+                        disabled={!isSelectable}
+                        className={cn(isSelectable ? 'font-normal' : 'font-semibold text-muted-foreground', `pl-${4 + level * 4}`)}
+                    >
+                        {c.name}
+                    </SelectItem>
+                );
+                const children = getOptionsForParent(c.id, level + 1);
+                return [option, ...children];
+            });
+    };
+
+    return topLevelCategories.flatMap(c => {
+       const isSelectable = getCategoryDepth(c.id) > 0;
+       const option = (
+           <SelectItem
+                key={c.id}
+                value={c.name}
+                disabled={!isSelectable}
+                className="font-bold"
+            >
+                {c.name}
+            </SelectItem>
+       );
+       const children = getOptionsForParent(c.id, 1);
+       return [option, ...children];
     });
-    return options;
   };
 
   const handleDownload = (file: File) => {

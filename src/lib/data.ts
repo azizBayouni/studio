@@ -35,7 +35,7 @@ export type Transaction = {
   amount: number;
   type: 'income' | 'expense';
   category: string;
-  subCategory?: string;
+  subCategory?: string; // This will now represent the leaf category name
   wallet: string;
   description?: string;
   currency: string;
@@ -91,10 +91,12 @@ export const categories: Category[] = [
   { id: '13', name: 'Income', type: 'income', parentId: null, icon: '📈' },
   { id: '14', name: 'Salary', type: 'income', parentId: '13', icon: '🏛️' },
   { id: '15', name: 'Freelance', type: 'income', parentId: '13', icon: '🐷' },
+  { id: '16', name: 'Coffee Shops', type: 'expense', parentId: '2', icon: '☕' },
+  { id: '17', name: 'Fast Food', type: 'expense', parentId: '2', icon: '🍟' },
 ];
 
 export const transactions: Transaction[] = [
-  { id: 't1', date: '2024-07-20', amount: 15.50, type: 'expense', category: 'Restaurants', wallet: 'Main Wallet', description: 'Lunch with colleagues', currency: 'USD', attachments: [], eventId: 'e1' },
+  { id: 't1', date: '2024-07-20', amount: 15.50, type: 'expense', category: 'Coffee Shops', wallet: 'Main Wallet', description: 'Lunch with colleagues', currency: 'USD', attachments: [], eventId: 'e1' },
   { id: 't2', date: '2024-07-20', amount: 80.00, type: 'expense', category: 'Groceries', wallet: 'Main Wallet', description: 'Weekly grocery shopping', currency: 'USD' },
   { id: 't3', date: '2024-07-19', amount: 2500, type: 'income', category: 'Salary', wallet: 'Main Wallet', description: 'Monthly salary', currency: 'USD' },
   { id: 't4', date: '2024-07-18', amount: 120.00, type: 'expense', category: 'Clothing', wallet: 'Credit Card', description: 'New shoes', currency: 'USD', eventId: 'e1', excludeFromReport: true },
@@ -140,5 +142,5 @@ export const events: Event[] = [
 export const emojiIcons = [
   '🍔', '🧾', '🛒', '🛍️', '👕', '💻', '🏠', '🏢', '🚌', '⛽', 
   '📈', '🏛️', '🐷', '🎁', '🎓', '✈️', '🏝️', '🏥', '💊', '🎉',
-  '💡', '💰', '💸', '💳', '🤔', '🏦', '🅿️', '💼', '🗾'
+  '💡', '💰', '💸', '💳', '🤔', '🏦', '🅿️', '💼', '🗾', '☕', '🍟'
 ];

@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { categories, emojiIcons, type Category } from '@/lib/data';
-import { updateCategory } from '@/services/category-service';
-import { useEffect, useState } from 'react';
+import { updateCategory, getCategoryDepth } from '@/services/category-service';
+import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
 
 interface EditCategoryDialogProps {
@@ -79,9 +79,21 @@ export function EditCategoryDialog({
   
   if (!category) return null;
 
-  const parentCategoryOptions = categories.filter(
-    (c) => c.id !== category.id && c.parentId === null
-  );
+  const parentCategoryOptions = useMemo(() => {
+    return categories.filter(c => {
+      // Cannot be its own parent
+      if (c.id === category.id) return false;
+      // Cannot be a child of itself
+      let current: Category | undefined = c;
+      while(current) {
+        if(current.parentId === category.id) return false;
+        current = categories.find(p => p.id === current!.parentId);
+      }
+      // Parent cannot be at level 3 already
+      if (getCategoryDepth(c.id) >= 2) return false;
+      return true;
+    });
+  }, [category]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -147,7 +159,7 @@ export function EditCategoryDialog({
                   <SelectValue placeholder="Select a parent category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
                   {parentCategoryOptions.map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
                       {parent.name}

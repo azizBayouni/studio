@@ -49,6 +49,16 @@ export default function CategoriesPage() {
     return parent ? parent.name : '';
   };
 
+  const getCategoryPath = (categoryId: string): string => {
+    let path = [];
+    let current: Category | undefined = categories.find(c => c.id === categoryId);
+    while (current) {
+        path.unshift(current.name);
+        current = categories.find(c => c.id === current!.parentId);
+    }
+    return path.join(' / ');
+  }
+
   const handleEditClick = (category: Category) => {
     setSelectedCategory(category);
     setIsEditDialogOpen(true);
@@ -60,7 +70,6 @@ export default function CategoriesPage() {
       toast({
         title: "Category Deleted",
         description: "The category and its sub-categories have been deleted.",
-        variant: "destructive",
       });
     } catch (error: any) {
        toast({
@@ -70,6 +79,24 @@ export default function CategoriesPage() {
       });
     }
   };
+  
+  const sortedCategories = categories.sort((a, b) => {
+    const pathA = getCategoryPath(a.id);
+    const pathB = getCategoryPath(b.id);
+    return pathA.localeCompare(pathB);
+  });
+
+  const getIndentation = (category: Category) => {
+    let level = 0;
+    let current = category;
+    while(current.parentId) {
+        level++;
+        const parent = categories.find(c => c.id === current.parentId);
+        if (!parent) break;
+        current = parent;
+    }
+    return { paddingLeft: `${level * 1.5}rem` };
+  }
 
   return (
     <>
@@ -78,7 +105,7 @@ export default function CategoriesPage() {
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Categories</h2>
             <p className="text-muted-foreground">
-              Organize your income and expenses.
+              Organize your income and expenses with up to 3 levels.
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -98,10 +125,10 @@ export default function CategoriesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {categories.map((category) => (
+              {sortedCategories.map((category) => (
                 <TableRow key={category.id}>
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" style={getIndentation(category)}>
                       <span className="text-lg">{category.icon}</span>
                       <span>{category.name}</span>
                     </div>
@@ -144,7 +171,7 @@ export default function CategoriesPage() {
                             <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the category. 
+                                This action cannot be undone. This will permanently delete the category and all its sub-categories. 
                                 Transactions associated with this category will not be deleted but will become uncategorized.
                             </AlertDialogDescription>
                             </AlertDialogHeader>

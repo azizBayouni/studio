@@ -30,8 +30,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CalendarIcon, Paperclip, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { categories, wallets, currencies, events } from '@/lib/data';
-import { useState, useEffect, useCallback } from 'react';
+import { categories, wallets, currencies, events, type Category } from '@/lib/data';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { addTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
@@ -41,6 +41,7 @@ import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { getDefaultWallet } from '@/services/wallet-service';
 import { Checkbox } from '@/components/ui/checkbox';
+import { getCategoryDepth } from '@/services/category-service';
 
 interface NewTransactionDialogProps {
   isOpen: boolean;
@@ -177,7 +178,7 @@ export function NewTransactionDialog({
         amount: Number(finalAmount),
         type,
         description,
-        category,
+        category: category,
         wallet,
         date: format(date, 'yyyy-MM-dd'),
         currency: defaultCurrency,
@@ -206,27 +207,52 @@ export function NewTransactionDialog({
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
+  
+  const selectableCategories = useMemo(() => {
+    return categories.filter(c => {
+      const depth = getCategoryDepth(c.id);
+      return depth > 0;
+    });
+  }, []);
 
   const renderCategoryOptions = () => {
-    const parentCategories = categories.filter(c => c.parentId === null);
-    const options: JSX.Element[] = [];
+    const topLevelCategories = categories.filter(c => c.parentId === null);
 
-    parentCategories.forEach(parent => {
-      options.push(
-        <SelectItem key={parent.id} value={parent.name} className="font-bold">
-          {parent.name}
-        </SelectItem>
-      );
-      const subCategories = categories.filter(c => c.parentId === parent.id);
-      subCategories.forEach(sub => {
-        options.push(
-          <SelectItem key={sub.id} value={sub.name} className="pl-8">
-            {sub.name}
-          </SelectItem>
-        );
-      });
+    const getOptionsForParent = (parentId: string | null, level: number): JSX.Element[] => {
+        return categories
+            .filter(c => c.parentId === parentId)
+            .flatMap(c => {
+                const isSelectable = getCategoryDepth(c.id) > 0;
+                const option = (
+                    <SelectItem
+                        key={c.id}
+                        value={c.name}
+                        disabled={!isSelectable}
+                        className={cn(isSelectable ? 'font-normal' : 'font-semibold text-muted-foreground', `pl-${4 + level * 4}`)}
+                    >
+                        {c.name}
+                    </SelectItem>
+                );
+                const children = getOptionsForParent(c.id, level + 1);
+                return [option, ...children];
+            });
+    };
+
+    return topLevelCategories.flatMap(c => {
+       const isSelectable = getCategoryDepth(c.id) > 0;
+       const option = (
+           <SelectItem
+                key={c.id}
+                value={c.name}
+                disabled={!isSelectable}
+                className="font-bold"
+            >
+                {c.name}
+            </SelectItem>
+       );
+       const children = getOptionsForParent(c.id, 1);
+       return [option, ...children];
     });
-    return options;
   };
   
   return (

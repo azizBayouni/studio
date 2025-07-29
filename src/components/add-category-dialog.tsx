@@ -26,9 +26,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { categories, emojiIcons } from '@/lib/data';
-import { addCategory } from '@/services/category-service';
-import { useState } from 'react';
+import { categories, emojiIcons, type Category } from '@/lib/data';
+import { addCategory, getCategoryDepth } from '@/services/category-service';
+import { useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
 
 interface AddCategoryDialogProps {
@@ -49,28 +49,36 @@ export function AddCategoryDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newCategory = {
-      name,
-      type,
-      parentId,
-      icon,
-    };
-    addCategory(newCategory);
-    toast({
-        title: "Category Added",
-        description: `The category "${name}" has been created.`,
-    })
-    onOpenChange(false);
-    // Reset form
-    setName('');
-    setType('expense');
-    setParentId(null);
-    setIcon('🤔');
+    try {
+      addCategory({
+        name,
+        type,
+        parentId,
+        icon,
+      });
+      toast({
+          title: "Category Added",
+          description: `The category "${name}" has been created.`,
+      })
+      onOpenChange(false);
+      // Reset form
+      setName('');
+      setType('expense');
+      setParentId(null);
+      setIcon('🤔');
+    } catch (error: any) {
+       toast({
+        title: "Failed to Add Category",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
   
-  const parentCategoryOptions = categories.filter(
-    (c) => c.parentId === null
-  );
+  const parentCategoryOptions = useMemo(() => {
+    // Only allow nesting up to 2 levels deep (so parent can be level 1 or 2)
+    return categories.filter(c => getCategoryDepth(c.id) < 2);
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -130,13 +138,13 @@ export function AddCategoryDialog({
               </RadioGroup>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="parent-category">Parent Category</Label>
+              <Label htmlFor="parent-category">Parent Category (Optional)</Label>
               <Select value={parentId || 'none'} onValueChange={(value) => setParentId(value === 'none' ? null : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a parent category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="none">None (Top Level)</SelectItem>
                   {parentCategoryOptions.map((parent) => (
                     <SelectItem key={parent.id} value={parent.id}>
                       {parent.name}
