@@ -78,9 +78,8 @@ export function EditCategoryDialog({
     }
   };
   
-  if (!category) return null;
-
   const parentCategoryOptions = useMemo(() => {
+    if (!category) return [];
     return categories.filter(c => {
       // Cannot be its own parent
       if (c.id === category.id) return false;
@@ -131,6 +130,8 @@ export function EditCategoryDialog({
        return [option, ...children];
     });
   };
+
+  if (!category) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
