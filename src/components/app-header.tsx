@@ -19,37 +19,41 @@ import { Plane, LogOut, User, Settings, CreditCard } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { TravelModeDialog } from './travel-mode-dialog';
-import { getUser, updateUser } from '@/services/user-service';
+import { getUser } from '@/services/user-service';
 import type { User as UserType } from '@/lib/data';
 import { getTravelMode, disconnectTravelMode } from '@/services/travel-mode-service';
-import { useAuth } from './auth-provider';
-import { signOutUser } from '@/services/auth-service';
 
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [isTravelMode, setIsTravelMode] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { user, loading } = useAuth();
-  
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+
   useEffect(() => {
     const travelModeState = getTravelMode();
     setIsTravelMode(travelModeState.isActive);
+    setCurrentUser(getUser());
 
     const handleTravelModeChange = () => {
       const updatedState = getTravelMode();
       setIsTravelMode(updatedState.isActive);
     };
+
+    const handleProfileUpdate = () => {
+        setCurrentUser(getUser());
+    }
     
     window.addEventListener('travelModeChanged', handleTravelModeChange);
+    window.addEventListener('profileUpdated', handleProfileUpdate);
 
     return () => {
       window.removeEventListener('travelModeChanged', handleTravelModeChange);
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
     };
   }, []);
 
   const getPageTitle = () => {
-    if (pathname.startsWith('/login') || pathname.startsWith('/signup')) return '';
     if (pathname === '/') return 'Dashboard';
     const name = pathname.split('/').pop() || '';
     return name.charAt(0).toUpperCase() + name.slice(1);
@@ -71,11 +75,6 @@ export function AppHeader() {
     return name.substring(0, 2).toUpperCase();
   };
   
-  const handleLogout = async () => {
-    await signOutUser();
-    router.push('/login');
-  }
-  
   const pageTitle = getPageTitle();
   if (!pageTitle) return null;
 
@@ -95,22 +94,22 @@ export function AppHeader() {
             <span className="hidden sm:inline">Travel Mode</span>
           </Label>
         </div>
-        {!loading && user && (
+        {currentUser && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || ''} />
-                  <AvatarFallback>{getInitials(user.displayName || user.email || 'U')}</AvatarFallback>
+                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
+                  <AvatarFallback>{getInitials(currentUser.name)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{user.displayName || 'User'}</p>
+                  <p className="text-sm font-medium leading-none">{currentUser.name}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user.email}
+                    {currentUser.email}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -121,11 +120,6 @@ export function AppHeader() {
                   <span>Settings</span>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
