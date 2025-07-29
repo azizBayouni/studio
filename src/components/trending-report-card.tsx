@@ -16,18 +16,24 @@ import {
 } from '@/components/ui/carousel';
 import { transactions as allTransactions } from '@/lib/data';
 import { startOfMonth, isWithinInterval, parseISO } from 'date-fns';
-import { TrendingUp, TrendingDown, Wallet, Utensils } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, Utensils, HelpCircle } from 'lucide-react';
 import { getDefaultCurrency } from '@/services/settings-service';
 
 export function TrendingReportCard() {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
-  const [isLoading, setIsLoading] = useState(true);
+  const [transactions, setTransactions] = useState(allTransactions);
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
-    setIsLoading(false);
+
+    const handleDataChange = () => {
+        setTransactions([...allTransactions]);
+    };
+
+    window.addEventListener('transactionsUpdated', handleDataChange);
+    return () => window.removeEventListener('transactionsUpdated', handleDataChange);
   }, []);
 
   useEffect(() => {
@@ -43,8 +49,9 @@ export function TrendingReportCard() {
   const monthlyTransactions = useMemo(() => {
     const now = new Date();
     const start = startOfMonth(now);
-    return allTransactions.filter(t => isWithinInterval(parseISO(t.date), { start, end: now }));
-  }, []);
+    const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
+    return reportableTransactions.filter(t => isWithinInterval(parseISO(t.date), { start, end: now }));
+  }, [transactions]);
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -54,9 +61,9 @@ export function TrendingReportCard() {
   };
   
   const trendingData = useMemo(() => {
-    if (isLoading || monthlyTransactions.length === 0) {
+    if (monthlyTransactions.length === 0) {
       return [
-        { title: "No data available for this month.", value: "", icon: <Wallet className="h-8 w-8 text-muted-foreground" /> }
+        { title: "No data available for this month.", value: "", icon: <HelpCircle className="h-8 w-8 text-muted-foreground" /> }
       ];
     }
     
@@ -68,7 +75,9 @@ export function TrendingReportCard() {
         return acc;
       }, {} as Record<string, number>);
       
-    const topCategory = Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1])[0];
+    const topCategory = Object.keys(expenseByCategory).length > 0 
+        ? Object.entries(expenseByCategory).sort((a, b) => b[1] - a[1])[0]
+        : null;
     
     // 2. Largest Transaction
     const largestTransaction = monthlyTransactions
@@ -81,26 +90,38 @@ export function TrendingReportCard() {
         return acc;
     }, {} as Record<string, number>);
 
-    const topWallet = Object.entries(walletUsage).sort((a,b) => b[1] - a[1])[0];
+    const topWallet = Object.keys(walletUsage).length > 0
+        ? Object.entries(walletUsage).sort((a,b) => b[1] - a[1])[0]
+        : null;
 
-    return [
-      { 
-        title: "Top Spending Category", 
-        value: topCategory ? `${topCategory[0]}: ${formatCurrency(topCategory[1], defaultCurrency)}` : 'N/A',
-        icon: <TrendingDown className="h-8 w-8 text-destructive" />
-      },
-      {
-        title: "Largest Transaction",
-        value: largestTransaction ? `${largestTransaction.category}: ${formatCurrency(largestTransaction.amount, defaultCurrency)}` : 'N/A',
-        icon: <TrendingUp className="h-8 w-8 text-accent" />
-      },
-      {
-        title: "Most Used Wallet",
-        value: topWallet ? `${topWallet[0]} (${topWallet[1]} times)` : 'N/A',
-        icon: <Wallet className="h-8 w-8 text-primary" />
-      }
-    ]
-  }, [monthlyTransactions, defaultCurrency, isLoading]);
+    let trends = [];
+    if (topCategory) {
+        trends.push({ 
+            title: "Top Spending Category", 
+            value: `${topCategory[0]}: ${formatCurrency(topCategory[1], defaultCurrency)}`,
+            icon: <TrendingDown className="h-8 w-8 text-destructive" />
+        });
+    }
+    if(largestTransaction) {
+         trends.push({
+            title: "Largest Transaction",
+            value: `${largestTransaction.category}: ${formatCurrency(largestTransaction.amount, defaultCurrency)}`,
+            icon: <TrendingUp className="h-8 w-8 text-accent" />
+        });
+    }
+    if (topWallet) {
+        trends.push({
+            title: "Most Used Wallet",
+            value: `${topWallet[0]} (${topWallet[1]} times)`,
+            icon: <Wallet className="h-8 w-8 text-primary" />
+        });
+    }
+
+    return trends.length > 0 ? trends : [
+        { title: "No trends available for this month.", value: "", icon: <HelpCircle className="h-8 w-8 text-muted-foreground" /> }
+    ];
+
+  }, [monthlyTransactions, defaultCurrency]);
 
 
   return (

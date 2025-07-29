@@ -1,34 +1,57 @@
 
 'use client';
 
-import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, CartesianGrid, Dot } from 'recharts';
-import { ChartTooltipContent, ChartContainer, ChartConfig, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
-import { HelpCircle } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
+import { eachDayOfInterval, endOfMonth, format, parseISO, startOfMonth } from 'date-fns';
+import { useMemo } from 'react';
+import type { Transaction } from '@/lib/data';
+import { getDefaultCurrency } from '@/services/settings-service';
 
-const chartData = [
-  { date: '01/07', thisMonth: 2200, last3Months: 4500 },
-  { date: '05/07', thisMonth: 2800, last3Months: 5000 },
-  { date: '10/07', thisMonth: 3500, last3Months: 6000 },
-  { date: '15/07', thisMonth: 4200, last3Months: 7500 },
-  { date: '20/07', thisMonth: 6000, last3Months: 8500 },
-  { date: '25/07', thisMonth: 7800, last3Months: 19000 },
-  { date: '30/07', thisMonth: 11000, last3Months: 25000 },
-  { date: '31/07', thisMonth: 11969.52, last3Months: 31512.49 },
-];
+interface MonthlyReportChartProps {
+    data: Transaction[];
+}
 
 const chartConfig = {
-  thisMonth: {
-    label: 'This month',
+  expense: {
+    label: 'Expense',
     color: 'hsl(var(--destructive))',
-  },
-  last3Months: {
-    label: 'Previous 3-month average',
-    color: 'hsl(var(--foreground))',
   },
 } satisfies ChartConfig;
 
+export function MonthlyReportChart({ data }: MonthlyReportChartProps) {
+  const defaultCurrency = getDefaultCurrency();
 
-export function MonthlyReportChart() {
+  const chartData = useMemo(() => {
+    if (data.length === 0) return [];
+    
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    
+    let cumulativeExpense = 0;
+    const dailyData = daysInMonth.map(day => {
+        const dayString = format(day, 'yyyy-MM-dd');
+        const dailyExpenses = data
+            .filter(t => t.type === 'expense' && format(parseISO(t.date), 'yyyy-MM-dd') === dayString)
+            .reduce((sum, t) => sum + t.amount, 0);
+        
+        cumulativeExpense += dailyExpenses;
+
+        return {
+            date: format(day, 'dd/MM'),
+            expense: cumulativeExpense > 0 ? cumulativeExpense : null, // Show null for days with no expense yet
+        };
+    });
+
+    return dailyData;
+
+  }, [data]);
+
+  const yDomainMax = Math.max(...chartData.map(d => d.expense || 0)) * 1.2;
+
   return (
     <ChartContainer config={chartConfig} className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -41,14 +64,16 @@ export function MonthlyReportChart() {
             bottom: -10,
           }}
         >
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis
             dataKey="date"
             tickLine={false}
             axisLine={false}
             tickMargin={8}
             fontSize={12}
-            tickFormatter={(value, index) => (index === 0 || index === chartData.length -1) ? value : ''}
+            tickFormatter={(value, index) => {
+                 if (index === 0 || index === chartData.length - 1) return value;
+                 return '';
+            }}
           />
           <YAxis
             tickLine={false}
@@ -56,54 +81,39 @@ export function MonthlyReportChart() {
             tickMargin={8}
             fontSize={12}
             tickFormatter={(value) => `${value / 1000}K`}
-            domain={[0, 'dataMax + 5000']}
+            domain={[0, yDomainMax > 0 ? yDomainMax : 100]}
           />
           <Tooltip
             cursor={{ stroke: 'hsl(var(--foreground))', strokeWidth: 1, strokeDasharray: '3 3' }}
             content={({ active, payload, label }) => (
                  active && payload && payload.length ? (
                 <div className="bg-background border rounded-lg p-2 shadow-lg">
-                    <p className="font-bold text-lg">{payload[1].value ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(payload[1].value as number) : 'N/A'}</p>
-                    <p className="text-sm text-muted-foreground">Previous 3-month average</p>
+                    <p className="text-sm text-muted-foreground">{label}</p>
+                    <p className="font-bold text-lg">
+                        {payload[0].value ? new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCurrency }).format(payload[0].value as number) : 'N/A'}
+                    </p>
                 </div>
                 ) : null
             )}
             
           />
           <defs>
-             <linearGradient id="colorThisMonth" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="var(--color-thisMonth)" stopOpacity={0.4}/>
-              <stop offset="95%" stopColor="var(--color-thisMonth)" stopOpacity={0}/>
+             <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="var(--color-expense)" stopOpacity={0.4}/>
+              <stop offset="95%" stopColor="var(--color-expense)" stopOpacity={0}/>
             </linearGradient>
           </defs>
           <Area
             type="monotone"
-            dataKey="thisMonth"
-            stroke="var(--color-thisMonth)"
+            dataKey="expense"
+            stroke="var(--color-expense)"
             strokeWidth={2}
             fillOpacity={1}
-            fill="url(#colorThisMonth)"
-          />
-          <Area
-            type="monotone"
-            dataKey="last3Months"
-            stroke="var(--color-last3Months)"
-            strokeWidth={2}
-            fill="transparent"
+            fill="url(#colorExpense)"
+            connectNulls
           />
         </AreaChart>
       </ResponsiveContainer>
-       <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground -mt-4">
-            <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(var(--destructive))' }} />
-                This month
-            </div>
-            <div className="flex items-center gap-2">
-                 <div className="w-2.5 h-2.5 rounded-full bg-foreground" />
-                Previous 3-month average
-                <HelpCircle className="w-3 h-3" />
-            </div>
-        </div>
     </ChartContainer>
   );
 }
