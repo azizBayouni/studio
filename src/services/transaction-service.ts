@@ -38,6 +38,11 @@ export function deleteTransaction(transactionId: string): void {
     }
 }
 
+export function deleteAllTransactions(): void {
+    transactions.length = 0;
+    window.dispatchEvent(new Event('transactionsUpdated'));
+}
+
 export async function convertAllTransactions(fromCurrency: string, toCurrency: string): Promise<void> {
     for (const transaction of transactions) {
         // We only convert transactions that are in the `fromCurrency`

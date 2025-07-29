@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents } from "@/lib/data"
-import { FileUp, Download, UploadCloud, Moon, Sun } from "lucide-react"
+import { FileUp, Download, UploadCloud, Moon, Sun, Trash2 } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
@@ -32,6 +32,7 @@ import type { Transaction } from "@/lib/data";
 import * as XLSX from 'xlsx';
 import { useTheme } from "@/components/theme-provider";
 import { Switch } from "@/components/ui/switch";
+import { DeleteAllTransactionsDialog } from "@/components/delete-all-transactions-dialog";
 
 
 export default function SettingsPage() {
@@ -40,6 +41,7 @@ export default function SettingsPage() {
   const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -400,6 +402,20 @@ export default function SettingsPage() {
               </Button>
             </CardFooter>
           </Card>
+
+           <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle>Danger Zone</CardTitle>
+              <CardDescription>These actions are irreversible. Please be certain.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button variant="destructive" onClick={() => setIsDeleteAllDialogOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete All Transactions
+                </Button>
+            </CardContent>
+          </Card>
+
         </div>
       </div>
       <ConfirmCurrencyChangeDialog
@@ -408,6 +424,10 @@ export default function SettingsPage() {
         oldCurrency={currentDefaultCurrency}
         newCurrency={selectedCurrency}
         onConfirm={handleConfirmation}
+      />
+       <DeleteAllTransactionsDialog
+        isOpen={isDeleteAllDialogOpen}
+        onOpenChange={setIsDeleteAllDialogOpen}
       />
     </>
   )
