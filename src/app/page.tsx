@@ -20,7 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Wallet, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { Overview } from '@/components/overview';
-import { transactions, wallets, debts as allDebts, type Transaction, getWalletBalance } from '@/lib/data';
+import { transactions, wallets as allWallets, debts as allDebts, type Transaction, getWalletBalance } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
@@ -46,8 +46,11 @@ export default function Dashboard() {
     };
 
     window.addEventListener('transactionsUpdated', handleDataChange);
+    window.addEventListener('storage', handleDataChange);
+
     return () => {
         window.removeEventListener('transactionsUpdated', handleDataChange);
+        window.removeEventListener('storage', handleDataChange);
     };
 
   }, []);
@@ -56,15 +59,10 @@ export default function Dashboard() {
     const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
     const thisMonthTransactions = reportableTransactions.filter(t => isThisMonth(parseISO(t.date)));
 
-    const updatedWallets = wallets.map(wallet => {
-        const hasTransactions = transactions.some(t => t.wallet === wallet.name);
-         if (hasTransactions || wallet.name === 'Main Wallet' || wallet.name === 'Credit Card' || wallet.name === 'PayPal') {
-            return { ...wallet, balance: getWalletBalance(wallet.name) };
-        }
-        return wallet;
-    })
+    const totalBalance = allWallets.reduce((sum, wallet) => {
+        return sum + getWalletBalance(wallet.name);
+    }, 0);
 
-    const totalBalance = updatedWallets.reduce((sum, wallet) => sum + wallet.balance, 0);
     const monthlyIncome = thisMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -86,7 +84,7 @@ export default function Dashboard() {
         recentTransactions: reportableTransactions.slice(0, 5),
         totalTransactionsThisMonth: reportableTransactions.length,
     }
-  }, [transactions, wallets, allDebts, forceRerender]);
+  }, [forceRerender]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

@@ -147,22 +147,23 @@ export const emojiIcons = [
 
 // Helper to calculate wallet balance
 export const getWalletBalance = (walletName: string) => {
+    const wallet = wallets.find(w => w.name === walletName);
+    if (!wallet) return 0;
+
+    // Start with the wallet's initial balance
+    const initialBalance = wallet.balance;
+
     const relevantTransactions = transactions.filter(t => t.wallet === walletName);
-    const balance = relevantTransactions.reduce((acc, t) => {
+    
+    // Calculate the net effect of transactions
+    const transactionNet = relevantTransactions.reduce((acc, t) => {
         if (t.type === 'income') {
             return acc + t.amount;
         }
         return acc - t.amount;
     }, 0);
-    return balance;
-}
 
-// Update wallet balances based on transactions
-wallets.forEach(wallet => {
-    // We preserve the initial balance for wallets that might represent savings or loans
-    // and only calculate the balance for wallets that are actively used for transactions.
-    const hasTransactions = transactions.some(t => t.wallet === wallet.name);
-    if (hasTransactions || wallet.name === 'Main Wallet' || wallet.name === 'Credit Card' || wallet.name === 'PayPal') {
-         wallet.balance = getWalletBalance(wallet.name);
-    }
-});
+    // Return initial balance + transaction effect.
+    // Note: For this to be accurate, the `wallet.balance` must be the *initial* balance, not a running total.
+    return initialBalance + transactionNet;
+}

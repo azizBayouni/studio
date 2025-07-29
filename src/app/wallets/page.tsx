@@ -11,7 +11,7 @@ import {
   CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { wallets, type Wallet } from '@/lib/data';
+import { wallets as allWallets, type Wallet, getWalletBalance } from '@/lib/data';
 import { PlusCircle, MoreVertical, Edit, Trash2, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -43,10 +43,34 @@ export default function WalletsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [defaultWalletId, setDefaultWalletId] = useState<string | null>(null);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const { toast } = useToast();
-
+  
   useEffect(() => {
     setDefaultWalletId(getDefaultWallet());
+    
+    // Calculate and set balances on mount
+    const updatedWallets = allWallets.map(w => ({
+      ...w,
+      balance: getWalletBalance(w.name)
+    }));
+    setWallets(updatedWallets);
+
+    const handleDataChange = () => {
+       const updatedWallets = allWallets.map(w => ({
+        ...w,
+        balance: getWalletBalance(w.name)
+      }));
+      setWallets(updatedWallets);
+    }
+    window.addEventListener('transactionsUpdated', handleDataChange);
+    window.addEventListener('storage', handleDataChange);
+    
+    return () => {
+      window.removeEventListener('transactionsUpdated', handleDataChange);
+      window.removeEventListener('storage', handleDataChange);
+    }
+
   }, []);
 
   const handleEditClick = (wallet: Wallet) => {
@@ -61,6 +85,12 @@ export default function WalletsPage() {
         description: "The wallet has been successfully deleted.",
         variant: "destructive"
     })
+    // Force a re-render
+    const updatedWallets = allWallets.map(w => ({
+      ...w,
+      balance: getWalletBalance(w.name)
+    }));
+    setWallets(updatedWallets);
   };
 
   const handleSetDefault = (walletId: string) => {
