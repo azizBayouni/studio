@@ -11,6 +11,7 @@ services:
       - DOCKER_ENV=true
     networks:
       - expensewise-net
+    restart: unless-stopped
 
   firebase-emulators:
     image: google/cloud-sdk:emulators
@@ -31,6 +32,7 @@ services:
       - ./firebase-data:/emulator-data
     networks:
       - expensewise-net
+    restart: unless-stopped
 
 networks:
   expensewise-net:
