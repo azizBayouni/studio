@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -21,8 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents } from "@/lib/data"
-import { FileUp, Download, UploadCloud, Moon, Sun, Trash2 } from "lucide-react"
+import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents, debts as allDebts, user as currentUserObject } from "@/lib/data"
+import { FileUp, Download, UploadCloud, Moon, Sun, Trash2, HardDriveDownload, HardDriveUpload } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
@@ -33,6 +32,10 @@ import * as XLSX from 'xlsx';
 import { useTheme } from "@/components/theme-provider";
 import { Switch } from "@/components/ui/switch";
 import { DeleteAllTransactionsDialog } from "@/components/delete-all-transactions-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getTheme, setTheme as setAppTheme } from "@/services/theme-service";
+import { getDefaultWallet, setDefaultWallet } from "@/services/wallet-service";
+import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
 
 
 export default function SettingsPage() {
@@ -43,10 +46,14 @@ export default function SettingsPage() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
-
+  
   useEffect(() => {
+    setIsClient(true);
+
     const initialCurrency = getDefaultCurrency();
     setCurrentDefaultCurrency(initialCurrency);
     setSelectedCurrency(initialCurrency);
@@ -284,6 +291,134 @@ export default function SettingsPage() {
     reader.readAsText(importFile);
   };
 
+  const handleBackup = () => {
+    try {
+      const settings = {
+        defaultCurrency: getDefaultCurrency(),
+        theme: getTheme(),
+        defaultWallet: getDefaultWallet(),
+        travelMode: getTravelMode(),
+      };
+
+      // We need to handle files in transactions. For simplicity, we'll store file names
+      // and accept that restoring won't restore file contents, just their names.
+      const serializableTransactions = allTransactions.map(t => ({
+          ...t,
+          attachments: t.attachments?.map(f => f.name) ?? [],
+      }));
+
+      const backupData = {
+        transactions: serializableTransactions,
+        categories: allCategories,
+        wallets: allWallets,
+        debts: allDebts,
+        events: allEvents,
+        user: currentUserObject,
+        settings: settings,
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `expensewise-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Backup Successful",
+        description: "All your data has been downloaded."
+      });
+
+    } catch (error) {
+      console.error("Backup failed:", error);
+      toast({
+        title: "Backup Failed",
+        description: "Could not create backup file. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRestore = () => {
+    if (!restoreFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a JSON backup file to restore.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result as string;
+            if (!text) throw new Error("File is empty.");
+            
+            const data = JSON.parse(text);
+
+            // --- VALIDATION (simple checks) ---
+            if (!data.transactions || !data.categories || !data.wallets || !data.settings) {
+                throw new Error("Invalid or corrupted backup file.");
+            }
+
+            // --- RESTORE DATA ---
+            // Clear existing data
+            allTransactions.length = 0;
+            allCategories.length = 0;
+            allWallets.length = 0;
+            allDebts.length = 0;
+            allEvents.length = 0;
+
+            // Push new data
+            // Note: transaction attachments are just names, not actual files.
+             data.transactions.forEach((t: any) => allTransactions.push({...t, attachments: []}));
+            data.categories.forEach((c: any) => allCategories.push(c));
+            data.wallets.forEach((w: any) => allWallets.push(w));
+            if (data.debts) data.debts.forEach((d: any) => allDebts.push(d));
+            if (data.events) data.events.forEach((ev: any) => allEvents.push(ev));
+            
+            // --- RESTORE SETTINGS ---
+            if (data.settings.defaultCurrency) setDefaultCurrency(data.settings.defaultCurrency);
+            if (data.settings.theme) setAppTheme(data.settings.theme);
+            if (data.settings.defaultWallet) setDefaultWallet(data.settings.defaultWallet);
+            if (data.settings.travelMode && data.settings.travelMode.isActive) {
+                setTravelMode(data.settings.travelMode);
+            }
+
+            // --- RESTORE USER ---
+            if (data.user) {
+                updateUser(data.user);
+            }
+
+            toast({
+                title: "Restore Successful",
+                description: "Your data has been restored. The page will now reload."
+            });
+            
+            // Reload the page to apply all changes
+            setTimeout(() => window.location.reload(), 2000);
+
+        } catch (error: any) {
+            console.error("Restore failed:", error);
+            toast({
+                title: 'Restore Failed',
+                description: error.message || 'An unexpected error occurred during restore.',
+                variant: 'destructive',
+            });
+        } finally {
+            setRestoreFile(null);
+            const fileInput = document.getElementById('restore-file') as HTMLInputElement;
+            if(fileInput) fileInput.value = '';
+        }
+    };
+    reader.readAsText(restoreFile);
+  };
+
+
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -322,6 +457,7 @@ export default function SettingsPage() {
               <CardDescription>Customize the look and feel of the application.</CardDescription>
             </CardHeader>
             <CardContent>
+              {isClient ? (
                 <div className="flex items-center justify-between">
                     <Label htmlFor="theme-switch" className="flex items-center gap-2">
                         {theme === 'dark' ? <Moon /> : <Sun />}
@@ -333,6 +469,12 @@ export default function SettingsPage() {
                         onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
                     />
                 </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-11" />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -361,15 +503,15 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Bulk Import / Export</CardTitle>
+              <CardTitle>Data Migration</CardTitle>
               <CardDescription>
-                Migrate your data or download a backup.
+                Import from CSV, export to XLSX, or use a full JSON backup.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="p-4 border rounded-lg flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 space-y-2">
-                        <h3 className="font-semibold">Import Data</h3>
+               <div className="p-4 border rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Import Transactions</h3>
                         <p className="text-sm text-muted-foreground">
                             Import transactions from a CSV template.
                         </p>
@@ -378,30 +520,61 @@ export default function SettingsPage() {
                             Download Template
                         </Button>
                     </div>
-                    <div className="flex-1 space-y-2 mt-4 sm:mt-0">
+                    <div className="space-y-2">
                         <h3 className="font-semibold">Export Data</h3>
                         <p className="text-sm text-muted-foreground">
-                            Export data to a single .xlsx file.
+                            Export main data to a single .xlsx file.
                         </p>
                         <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
                             <UploadCloud className="mr-2 h-4 w-4" />
-                           Export All Data
+                           Export to XLSX
                         </Button>
                     </div>
                </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="import-file">Upload CSV File for Import</Label>
                 <div className="flex flex-col sm:flex-row items-center gap-2">
                   <Input id="import-file" type="file" accept=".csv" className="w-full sm:max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
+                   <Button onClick={handleImport} disabled={!importFile}>
+                     <FileUp className="mr-2 h-4 w-4" /> Import from CSV
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup & Restore</CardTitle>
+              <CardDescription>
+                Save or load a complete snapshot of all application data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 border rounded-lg flex flex-col sm:flex-row gap-4 justify-between">
+                  <div className="space-y-2">
+                      <h3 className="font-semibold">Backup</h3>
+                      <p className="text-sm text-muted-foreground">Download a single JSON file containing all your data and settings.</p>
+                      <Button variant="default" onClick={handleBackup}>
+                          <HardDriveDownload className="mr-2 h-4 w-4" />
+                          Backup All Data
+                      </Button>
+                  </div>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="restore-file">Upload JSON for Restore</Label>
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <Input id="restore-file" type="file" accept=".json" className="w-full sm:max-w-xs" onChange={(e) => setRestoreFile(e.target.files ? e.target.files[0] : null)} />
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleImport}>
-                <FileUp className="mr-2 h-4 w-4" /> Upload and Import
+              <Button onClick={handleRestore} disabled={!restoreFile}>
+                <HardDriveUpload className="mr-2 h-4 w-4" /> Restore from Backup
               </Button>
             </CardFooter>
           </Card>
+
 
            <Card className="border-destructive">
             <CardHeader>
@@ -432,3 +605,5 @@ export default function SettingsPage() {
     </>
   )
 }
+
+    
