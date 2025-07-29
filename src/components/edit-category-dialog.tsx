@@ -30,6 +30,7 @@ import { categories, emojiIcons, type Category } from '@/lib/data';
 import { updateCategory, getCategoryDepth } from '@/services/category-service';
 import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
+import { cn } from '@/lib/utils';
 
 interface EditCategoryDialogProps {
   isOpen: boolean;
@@ -94,6 +95,42 @@ export function EditCategoryDialog({
       return true;
     });
   }, [category]);
+  
+  const renderParentCategoryOptions = () => {
+    const topLevelCategories = parentCategoryOptions.filter(c => c.parentId === null);
+
+    const getOptionsForParent = (pId: string | null, level: number): JSX.Element[] => {
+        return parentCategoryOptions
+            .filter(c => c.parentId === pId)
+            .flatMap(c => {
+                const option = (
+                    <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        className={cn(`pl-${4 + level * 4}`)}
+                    >
+                        {c.name}
+                    </SelectItem>
+                );
+                const children = getOptionsForParent(c.id, level + 1);
+                return [option, ...children];
+            });
+    };
+
+    return topLevelCategories.flatMap(c => {
+       const option = (
+           <SelectItem
+                key={c.id}
+                value={c.id}
+                className="font-semibold"
+            >
+                {c.name}
+            </SelectItem>
+       );
+       const children = getOptionsForParent(c.id, 1);
+       return [option, ...children];
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -160,11 +197,7 @@ export function EditCategoryDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None (Top Level)</SelectItem>
-                  {parentCategoryOptions.map((parent) => (
-                    <SelectItem key={parent.id} value={parent.id}>
-                      {parent.name}
-                    </SelectItem>
-                  ))}
+                  {renderParentCategoryOptions()}
                 </SelectContent>
               </Select>
             </div>
