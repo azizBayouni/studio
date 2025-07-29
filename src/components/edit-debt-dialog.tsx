@@ -151,6 +151,11 @@ export function EditDebtDialog({
     }
   };
 
+  const formatCurrency = (value: number) => {
+    if (!currency) return '...';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
+  }
+
   if (!debt) return null;
   
   return (
@@ -166,9 +171,9 @@ export function EditDebtDialog({
           <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label>Remaining Balance</Label>
-              <p className="text-2xl font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(remainingAmount)}</p>
+              <p className="text-2xl font-bold">{formatCurrency(remainingAmount)}</p>
               <p className="text-sm text-muted-foreground">
-                Originally {new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount))}
+                Originally {formatCurrency(Number(amount))}
               </p>
             </div>
 
@@ -199,13 +204,13 @@ export function EditDebtDialog({
                         {payments.map(p => (
                             <div key={p.id} className="flex justify-between items-center text-sm">
                                 <span>{format(parseISO(p.date), 'dd MMM yyyy')}</span>
-                                <span className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(p.amount)}</span>
+                                <span className="font-medium">{formatCurrency(p.amount)}</span>
                             </div>
                         ))}
                          <Separator />
                          <div className="flex justify-between items-center text-sm font-semibold">
                             <span>Total Paid</span>
-                            <span>{new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(totalPaid)}</span>
+                            <span>{formatCurrency(totalPaid)}</span>
                         </div>
                     </div>
                 </div>
