@@ -1,7 +1,7 @@
 
-import { categories, transactions, type Category } from '@/lib/data';
+import { categories as allCategories, transactions, type Category } from '@/lib/data';
 
-export function getCategoryDepth(categoryId: string | null): number {
+export function getCategoryDepth(categoryId: string | null, categories: Category[] = allCategories): number {
     if (!categoryId) return 0;
     let depth = 0;
     let current = categories.find(c => c.id === categoryId);
@@ -15,10 +15,10 @@ export function getCategoryDepth(categoryId: string | null): number {
 
 
 export function updateCategory(updatedCategory: Category): void {
-  const index = categories.findIndex((c) => c.id === updatedCategory.id);
+  const index = allCategories.findIndex((c) => c.id === updatedCategory.id);
   if (index !== -1) {
-    const oldName = categories[index].name;
-    categories[index] = updatedCategory;
+    const oldName = allCategories[index].name;
+    allCategories[index] = updatedCategory;
     // Update transactions if category name changed
     if (oldName !== updatedCategory.name) {
         transactions.forEach(t => {
@@ -35,18 +35,18 @@ export function updateCategory(updatedCategory: Category): void {
 
 export function addCategory(newCategory: Omit<Category, 'id'>): void {
     if (newCategory.parentId) {
-        const parentDepth = getCategoryDepth(newCategory.parentId);
+        const parentDepth = getCategoryDepth(newCategory.parentId, allCategories);
         if (parentDepth >= 2) {
             throw new Error("Cannot add a category beyond 3 levels deep.");
         }
     }
 
-    const newId = (Math.max(...categories.map(c => parseInt(c.id))) + 1).toString();
-    categories.push({ ...newCategory, id: newId });
+    const newId = (Math.max(...allCategories.map(c => parseInt(c.id))) + 1).toString();
+    allCategories.push({ ...newCategory, id: newId });
 }
 
 export function deleteCategory(categoryId: string): void {
-    const categoryToDelete = categories.find(c => c.id === categoryId);
+    const categoryToDelete = allCategories.find(c => c.id === categoryId);
     if (!categoryToDelete) {
         throw new Error(`Category with id ${categoryId} not found.`);
     }
@@ -54,7 +54,7 @@ export function deleteCategory(categoryId: string): void {
     // Recursively find all child categories
     const allIdsToDelete: string[] = [categoryId];
     const findChildren = (parentId: string) => {
-        const children = categories.filter(c => c.parentId === parentId);
+        const children = allCategories.filter(c => c.parentId === parentId);
         for (const child of children) {
             allIdsToDelete.push(child.id);
             findChildren(child.id);
@@ -63,7 +63,7 @@ export function deleteCategory(categoryId: string): void {
     findChildren(categoryId);
     
     // Find names of all categories being deleted
-    const namesToDelete = categories.filter(c => allIdsToDelete.includes(c.id)).map(c => c.name);
+    const namesToDelete = allCategories.filter(c => allIdsToDelete.includes(c.id)).map(c => c.name);
 
     // Prevent deletion if transactions are associated with it
     const hasTransactions = transactions.some(t => namesToDelete.includes(t.category));
@@ -72,9 +72,9 @@ export function deleteCategory(categoryId: string): void {
     }
 
     // Filter out the category and its sub-categories
-    const updatedCategories = categories.filter(c => !allIdsToDelete.includes(c.id));
+    const updatedCategories = allCategories.filter(c => !allIdsToDelete.includes(c.id));
     
     // Replace the original array
-    categories.length = 0;
-    categories.push(...updatedCategories);
+    allCategories.length = 0;
+    allCategories.push(...updatedCategories);
 }

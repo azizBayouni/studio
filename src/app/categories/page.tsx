@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { categories, type Category } from '@/lib/data';
+import { categories as initialCategories, type Category } from '@/lib/data';
 import { PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -38,11 +38,22 @@ import { deleteCategory } from '@/services/category-service';
 import { useToast } from '@/hooks/use-toast';
 
 export default function CategoriesPage() {
+  const [categories, setCategories] = useState([...initialCategories]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [_, setForceRender] = useState(0); // Used to force re-render on delete
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      setCategories([...initialCategories]);
+    };
+    // This is a simplified way to listen for data changes.
+    // In a real app, you might use a more robust state management library.
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
 
   const getCategoryName = (id: string | null): string => {
     if (!id) return '';
@@ -68,12 +79,11 @@ export default function CategoriesPage() {
   const handleDeleteClick = (categoryId: string) => {
     try {
       deleteCategory(categoryId);
+      setCategories([...initialCategories]); // Refresh state from source
       toast({
         title: "Category Deleted",
         description: "The category and its sub-categories have been deleted.",
       });
-      // Force a re-render to update the category list everywhere
-      setForceRender(Math.random()); 
     } catch (error: any) {
        toast({
         title: "Deletion Failed",
@@ -99,6 +109,10 @@ export default function CategoriesPage() {
         current = parent;
     }
     return { paddingLeft: `${level * 1.5}rem` };
+  }
+  
+  const handleDialogClose = () => {
+     setCategories([...initialCategories]);
   }
 
   return (
@@ -193,12 +207,19 @@ export default function CategoriesPage() {
       </div>
       <EditCategoryDialog 
         isOpen={isEditDialogOpen} 
-        onOpenChange={setIsEditDialogOpen} 
+        onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) handleDialogClose();
+        }} 
         category={selectedCategory}
+        allCategories={categories}
       />
       <AddCategoryDialog
         isOpen={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+        onOpenChange={(open) => {
+            setIsAddDialogOpen(open);
+            if (!open) handleDialogClose();
+        }}
         allCategories={categories}
       />
     </>

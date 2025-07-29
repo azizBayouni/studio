@@ -26,7 +26,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { categories, emojiIcons, type Category } from '@/lib/data';
+import { emojiIcons, type Category } from '@/lib/data';
 import { updateCategory, getCategoryDepth } from '@/services/category-service';
 import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
@@ -36,12 +36,14 @@ interface EditCategoryDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   category: Category | null;
+  allCategories: Category[];
 }
 
 export function EditCategoryDialog({
   isOpen,
   onOpenChange,
   category,
+  allCategories,
 }: EditCategoryDialogProps) {
   const [name, setName] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
@@ -57,43 +59,51 @@ export function EditCategoryDialog({
       setParentId(category.parentId);
       setIcon(category.icon);
     }
-  }, [category]);
+  }, [category, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (category) {
-      const updatedCategory: Category = {
-        ...category,
-        name,
-        type,
-        parentId,
-        icon,
-      };
-      updateCategory(updatedCategory);
-      toast({
-          title: "Category Updated",
-          description: `The category "${name}" has been saved.`,
-      })
-      onOpenChange(false);
+      try {
+        const updatedCategoryData: Category = {
+          ...category,
+          name,
+          type,
+          parentId,
+          icon,
+        };
+        updateCategory(updatedCategoryData);
+        toast({
+            title: "Category Updated",
+            description: `The category "${name}" has been saved.`,
+        })
+        onOpenChange(false);
+      } catch (error: any) {
+        toast({
+            title: "Failed to Update Category",
+            description: error.message,
+            variant: "destructive",
+        });
+      }
     }
   };
   
   const parentCategoryOptions = useMemo(() => {
     if (!category) return [];
-    return categories.filter(c => {
+    return allCategories.filter(c => {
       // Cannot be its own parent
       if (c.id === category.id) return false;
       // Cannot be a child of itself
       let current: Category | undefined = c;
       while(current) {
         if(current.parentId === category.id) return false;
-        current = categories.find(p => p.id === current!.parentId);
+        current = allCategories.find(p => p.id === current!.parentId);
       }
       // Parent cannot be at level 3 already
-      if (getCategoryDepth(c.id) >= 2) return false;
+      if (getCategoryDepth(c.id, allCategories) >= 2) return false;
       return true;
     });
-  }, [category]);
+  }, [category, allCategories]);
   
   const renderParentCategoryOptions = () => {
     const topLevelCategories = parentCategoryOptions.filter(c => c.parentId === null);
@@ -131,7 +141,7 @@ export function EditCategoryDialog({
     });
   };
 
-  if (!category) return null;
+  if (!isOpen || !category) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
