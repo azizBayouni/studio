@@ -20,7 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { DollarSign, Wallet, TrendingUp, TrendingDown, PlusCircle } from 'lucide-react';
 import { Overview } from '@/components/overview';
-import { transactions, wallets, debts as allDebts, type Transaction } from '@/lib/data';
+import { transactions, wallets, debts as allDebts, type Transaction, getWalletBalance } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { NewTransactionDialog } from '@/components/new-transaction-dialog';
 import { getDefaultCurrency } from '@/services/settings-service';
@@ -34,16 +34,37 @@ export default function Dashboard() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [forceRerender, setForceRerender] = useState(0);
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
+
+    const handleDataChange = () => {
+        // This is a simple way to force a re-render when data changes.
+        // In a more complex app, a more robust state management solution would be better.
+        setForceRerender(Math.random());
+    };
+
+    window.addEventListener('transactionsUpdated', handleDataChange);
+    return () => {
+        window.removeEventListener('transactionsUpdated', handleDataChange);
+    };
+
   }, []);
 
   const dashboardData = useMemo(() => {
     const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
     const thisMonthTransactions = reportableTransactions.filter(t => isThisMonth(parseISO(t.date)));
 
-    const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+    const updatedWallets = wallets.map(wallet => {
+        const hasTransactions = transactions.some(t => t.wallet === wallet.name);
+         if (hasTransactions || wallet.name === 'Main Wallet' || wallet.name === 'Credit Card' || wallet.name === 'PayPal') {
+            return { ...wallet, balance: getWalletBalance(wallet.name) };
+        }
+        return wallet;
+    })
+
+    const totalBalance = updatedWallets.reduce((sum, wallet) => sum + wallet.balance, 0);
     const monthlyIncome = thisMonthTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -65,7 +86,7 @@ export default function Dashboard() {
         recentTransactions: reportableTransactions.slice(0, 5),
         totalTransactionsThisMonth: reportableTransactions.length,
     }
-  }, [transactions, wallets, allDebts]);
+  }, [transactions, wallets, allDebts, forceRerender]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

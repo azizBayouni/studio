@@ -107,10 +107,10 @@ export const transactions: Transaction[] = [
 ];
 
 export const wallets: Wallet[] = [
-  { id: 'w1', name: 'Main Wallet', currency: 'USD', balance: 3450.75, icon: '🏦' },
-  { id: 'w2', name: 'Credit Card', currency: 'USD', balance: -1240.20, icon: '💳' },
+  { id: 'w1', name: 'Main Wallet', currency: 'USD', balance: 0, icon: '🏦' },
+  { id: 'w2', name: 'Credit Card', currency: 'USD', balance: 0, icon: '💳' },
   { id: 'w3', name: 'Savings', currency: 'USD', balance: 15800.00, icon: '🐷' },
-  { id: 'w4', name: 'PayPal', currency: 'USD', balance: 2500.00, icon: '🅿️' },
+  { id: 'w4', name: 'PayPal', currency: 'USD', balance: 0, icon: '🅿️' },
 ];
 
 export const debts: Debt[] = [
@@ -144,3 +144,25 @@ export const emojiIcons = [
   '📈', '🏛️', '🐷', '🎁', '🎓', '✈️', '🏝️', '🏥', '💊', '🎉',
   '💡', '💰', '💸', '💳', '🤔', '🏦', '🅿️', '💼', '🗾', '☕', '🍟'
 ];
+
+// Helper to calculate wallet balance
+export const getWalletBalance = (walletName: string) => {
+    const relevantTransactions = transactions.filter(t => t.wallet === walletName);
+    const balance = relevantTransactions.reduce((acc, t) => {
+        if (t.type === 'income') {
+            return acc + t.amount;
+        }
+        return acc - t.amount;
+    }, 0);
+    return balance;
+}
+
+// Update wallet balances based on transactions
+wallets.forEach(wallet => {
+    // We preserve the initial balance for wallets that might represent savings or loans
+    // and only calculate the balance for wallets that are actively used for transactions.
+    const hasTransactions = transactions.some(t => t.wallet === wallet.name);
+    if (hasTransactions || wallet.name === 'Main Wallet' || wallet.name === 'Credit Card' || wallet.name === 'PayPal') {
+         wallet.balance = getWalletBalance(wallet.name);
+    }
+});
