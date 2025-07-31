@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -209,20 +210,41 @@ export function NewTransactionDialog({
   };
   
   const selectableCategories = useMemo(() => {
-    return categories.filter(c => {
-      const depth = getCategoryDepth(c.id);
-      return depth > 0;
-    });
-  }, []);
+    const selectedWallet = wallets.find(w => w.name === wallet);
+    if (!selectedWallet || !selectedWallet.linkedCategoryIds || selectedWallet.linkedCategoryIds.length === 0) {
+      return categories;
+    }
+    
+    const linkedIds = new Set(selectedWallet.linkedCategoryIds);
+    const availableCategories: Category[] = [];
+
+    categories.forEach(c => {
+        let isLinked = linkedIds.has(c.id);
+        let current: Category | undefined = c;
+        while(current && current.parentId) {
+            if(linkedIds.has(current.parentId)) {
+                isLinked = true;
+                break;
+            }
+            current = categories.find(p => p.id === current?.parentId)
+        }
+
+        if(isLinked) {
+            availableCategories.push(c);
+        }
+    })
+
+    return availableCategories;
+  }, [wallet]);
 
   const renderCategoryOptions = () => {
-    const topLevelCategories = categories.filter(c => c.parentId === null);
+    const topLevelCategories = selectableCategories.filter(c => c.parentId === null);
 
     const getOptionsForParent = (parentId: string | null, level: number): JSX.Element[] => {
-        return categories
+        return selectableCategories
             .filter(c => c.parentId === parentId)
             .flatMap(c => {
-                const isSelectable = getCategoryDepth(c.id) > 0;
+                const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
                 const option = (
                     <SelectItem
                         key={c.id}
@@ -239,7 +261,7 @@ export function NewTransactionDialog({
     };
 
     return topLevelCategories.flatMap(c => {
-       const isSelectable = getCategoryDepth(c.id) > 0;
+       const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
        const option = (
            <SelectItem
                 key={c.id}

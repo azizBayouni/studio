@@ -50,6 +50,7 @@ export type Wallet = {
   currency: string;
   balance: number;
   icon?: string;
+  linkedCategoryIds?: string[];
 };
 
 export type Payment = {
@@ -115,10 +116,10 @@ export const transactions: Transaction[] = [
 ];
 
 export const wallets: Wallet[] = [
-  { id: 'w1', name: 'Main Wallet', currency: 'USD', balance: 0, icon: '🏦' },
-  { id: 'w2', name: 'Credit Card', currency: 'USD', balance: 0, icon: '💳' },
-  { id: 'w3', name: 'Savings', currency: 'USD', balance: 15800.00, icon: '🐷' },
-  { id: 'w4', name: 'PayPal', currency: 'USD', balance: 0, icon: '🅿️' },
+  { id: 'w1', name: 'Main Wallet', currency: 'USD', balance: 0, icon: '🏦', linkedCategoryIds: [] },
+  { id: 'w2', name: 'Credit Card', currency: 'USD', balance: 0, icon: '💳', linkedCategoryIds: [] },
+  { id: 'w3', name: 'Savings', currency: 'USD', balance: 15800.00, icon: '🐷', linkedCategoryIds: [] },
+  { id: 'w4', name: 'PayPal', currency: 'USD', balance: 0, icon: '🅿️', linkedCategoryIds: [] },
 ];
 
 export const debts: Debt[] = [

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -20,10 +21,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { getCategoryDepth } from '@/services/category-service';
+import { categories } from '@/lib/data';
 
 export type MultiSelectOption = {
   value: string;
   label: string;
+  depth?: number;
 };
 
 interface MultiSelectProps {
@@ -43,10 +47,19 @@ export function MultiSelect({
   ...props
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const selectedOptions = options.filter(o => selected.includes(o.value));
 
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
   };
+  
+  const handleSelect = (value: string) => {
+     onChange(
+        selected.includes(value)
+            ? selected.filter((item) => item !== value)
+            : [...selected, value]
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen} {...props}>
@@ -59,18 +72,18 @@ export function MultiSelect({
           onClick={() => setOpen(!open)}
         >
           <div className="flex gap-1 flex-wrap">
-            {selected.length > 0 ? (
-                selected.map((item) => (
+            {selectedOptions.length > 0 ? (
+                selectedOptions.map((option) => (
                     <Badge
                         variant="secondary"
-                        key={item}
+                        key={option.value}
                         className="mr-1"
                         onClick={(e) => {
                             e.stopPropagation();
-                            handleUnselect(item);
+                            handleUnselect(option.value);
                         }}
                     >
-                        {item}
+                        {option.label}
                         <X className="ml-1 h-3 w-3" />
                     </Badge>
                 ))
@@ -81,7 +94,7 @@ export function MultiSelect({
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
           <CommandInput placeholder="Search ..." />
           <CommandList>
@@ -90,14 +103,12 @@ export function MultiSelect({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  onSelect={() => {
-                    onChange(
-                      selected.includes(option.value)
-                        ? selected.filter((item) => item !== option.value)
-                        : [...selected, option.value]
-                    );
-                    setOpen(true);
-                  }}
+                  onSelect={() => handleSelect(option.value)}
+                  className={cn(
+                    option.depth === 0 ? 'font-bold' : '',
+                    option.depth === 1 ? 'pl-6' : '',
+                    option.depth === 2 ? 'pl-10' : ''
+                  )}
                 >
                   <div
                     className={cn(

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -41,7 +42,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
-import { categories, wallets, currencies, events } from '@/lib/data';
+import { categories, wallets, currencies, events, type Category } from '@/lib/data';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { updateTransaction, deleteTransaction } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
@@ -153,13 +154,33 @@ export function EditTransactionDialog({
   }, [isOpen, resetAndInitialize]);
   
   const selectableCategories = useMemo(() => {
-    return categories.filter(c => {
-      const depth = getCategoryDepth(c.id);
-      return depth > 0;
-    });
-  }, []);
+    const selectedWallet = wallets.find(w => w.name === wallet);
+    if (!selectedWallet || !selectedWallet.linkedCategoryIds || selectedWallet.linkedCategoryIds.length === 0) {
+      return categories;
+    }
 
-  if (!transaction) return null;
+    const linkedIds = new Set(selectedWallet.linkedCategoryIds);
+    const availableCategories: Category[] = [];
+
+    categories.forEach(c => {
+        let isLinked = linkedIds.has(c.id);
+        let current: Category | undefined = c;
+        while(current && current.parentId) {
+            if(linkedIds.has(current.parentId)) {
+                isLinked = true;
+                break;
+            }
+            current = categories.find(p => p.id === current?.parentId)
+        }
+
+        if(isLinked) {
+            availableCategories.push(c);
+        }
+    })
+
+    return availableCategories;
+  }, [wallet]);
+
 
   const handleAmountChange = (value: string) => {
     const numericValue = value === '' ? '' : parseFloat(value);
@@ -193,28 +214,30 @@ export function EditTransactionDialog({
         return;
     }
 
-    const updatedTransaction: Transaction = {
-        ...transaction,
-        amount: Number(finalAmount),
-        type,
-        description,
-        category,
-        wallet,
-        date: format(date, 'yyyy-MM-dd'),
-        currency: defaultCurrency, // Always save in default currency
-        attachments,
-        eventId: eventId,
-        excludeFromReport: excludeFromReport,
-    };
+    if (transaction) {
+      const updatedTransaction: Transaction = {
+          ...transaction,
+          amount: Number(finalAmount),
+          type,
+          description,
+          category,
+          wallet,
+          date: format(date, 'yyyy-MM-dd'),
+          currency: defaultCurrency, // Always save in default currency
+          attachments,
+          eventId: eventId,
+          excludeFromReport: excludeFromReport,
+      };
 
-    updateTransaction(updatedTransaction);
+      updateTransaction(updatedTransaction);
 
-    toast({
-      title: 'Transaction Updated',
-      description: 'Your transaction has been successfully updated.',
-    });
+      toast({
+        title: 'Transaction Updated',
+        description: 'Your transaction has been successfully updated.',
+      });
 
-    onOpenChange(false);
+      onOpenChange(false);
+    }
   };
 
   const handleDelete = () => {
@@ -241,13 +264,13 @@ export function EditTransactionDialog({
   };
   
   const renderCategoryOptions = () => {
-    const topLevelCategories = categories.filter(c => c.parentId === null);
+    const topLevelCategories = selectableCategories.filter(c => c.parentId === null);
 
     const getOptionsForParent = (parentId: string | null, level: number): JSX.Element[] => {
-        return categories
+        return selectableCategories
             .filter(c => c.parentId === parentId)
             .flatMap(c => {
-                const isSelectable = getCategoryDepth(c.id) > 0;
+                const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
                 const option = (
                     <SelectItem
                         key={c.id}
@@ -264,7 +287,7 @@ export function EditTransactionDialog({
     };
 
     return topLevelCategories.flatMap(c => {
-       const isSelectable = getCategoryDepth(c.id) > 0;
+       const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
        const option = (
            <SelectItem
                 key={c.id}
@@ -290,6 +313,8 @@ export function EditTransactionDialog({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+  
+  if (!transaction) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

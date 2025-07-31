@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -25,10 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { emojiIcons, type Wallet, currencies } from '@/lib/data';
+import { emojiIcons, type Wallet, currencies, categories, type Category } from '@/lib/data';
 import { updateWallet } from '@/services/wallet-service';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
+import { MultiSelect, type MultiSelectOption } from './ui/multi-select';
+import { ScrollArea } from './ui/scroll-area';
+import { cn } from '@/lib/utils';
+import { getCategoryDepth } from '@/services/category-service';
 
 interface EditWalletDialogProps {
   isOpen: boolean;
@@ -44,6 +49,7 @@ export function EditWalletDialog({
   const [name, setName] = useState('');
   const [icon, setIcon] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState('');
+  const [linkedCategoryIds, setLinkedCategoryIds] = useState<string[]>([]);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const { toast } = useToast();
 
@@ -52,8 +58,9 @@ export function EditWalletDialog({
       setName(wallet.name);
       setIcon(wallet.icon);
       setCurrency(wallet.currency);
+      setLinkedCategoryIds(wallet.linkedCategoryIds || []);
     }
-  }, [wallet]);
+  }, [wallet, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +70,7 @@ export function EditWalletDialog({
         name,
         icon,
         currency,
+        linkedCategoryIds,
       };
       updateWallet(updatedWallet);
       toast({
@@ -73,6 +81,14 @@ export function EditWalletDialog({
     }
   };
   
+  const categoryOptions = useMemo(() => {
+     return categories.map(c => ({
+        label: c.name,
+        value: c.id,
+        depth: getCategoryDepth(c.id)
+     }));
+  }, []);
+  
   if (!wallet) return null;
 
   return (
@@ -82,10 +98,10 @@ export function EditWalletDialog({
           <DialogHeader>
             <DialogTitle>Edit Wallet</DialogTitle>
             <DialogDescription>
-              Update the name, icon, and currency for your wallet.
+              Update the details and linked categories for your wallet.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
             <div className="flex items-end gap-4">
               <div className="space-y-2">
                 <Label htmlFor="icon">Icon</Label>
@@ -96,21 +112,23 @@ export function EditWalletDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-2">
-                    <div className="grid grid-cols-5 gap-2">
-                      {emojiIcons.map((emoji) => (
-                        <Button
-                          key={emoji}
-                          variant="ghost"
-                          className="text-lg p-2"
-                          onClick={() => {
-                            setIcon(emoji);
-                            setIsPopoverOpen(false);
-                          }}
-                        >
-                          {emoji}
-                        </Button>
-                      ))}
-                    </div>
+                     <ScrollArea className="h-48">
+                        <div className="grid grid-cols-5 gap-2">
+                        {emojiIcons.map((emoji) => (
+                            <Button
+                            key={emoji}
+                            variant="ghost"
+                            className="text-lg p-2"
+                            onClick={() => {
+                                setIcon(emoji);
+                                setIsPopoverOpen(false);
+                            }}
+                            >
+                            {emoji}
+                            </Button>
+                        ))}
+                        </div>
+                    </ScrollArea>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -132,9 +150,21 @@ export function EditWalletDialog({
                  <p className="text-xs text-muted-foreground">
                     Changing the currency will not convert the balance.
                 </p>
-              </div>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="linked-categories">Linked Categories</Label>
+                <MultiSelect
+                    options={categoryOptions}
+                    selected={linkedCategoryIds}
+                    onChange={setLinkedCategoryIds}
+                    placeholder="All categories"
+                />
+                 <p className="text-xs text-muted-foreground">
+                    If no categories are selected, all will be available for transactions with this wallet.
+                </p>
+            </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="border-t pt-4">
             <DialogClose asChild>
               <Button type="button" variant="secondary">
                 Cancel
