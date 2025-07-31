@@ -158,14 +158,18 @@ export default function ReportsPage() {
       const topLevelParent = getTopLevelParent(curr.category);
         
         if (topLevelParent) {
-            acc[topLevelParent.name] = (acc[topLevelParent.name] || 0) + curr.amount;
+            if (!acc[topLevelParent.name]) {
+              acc[topLevelParent.name] = { value: 0, icon: topLevelParent.icon || '💸' };
+            }
+            acc[topLevelParent.name].value += curr.amount;
         }
         return acc;
-    }, {} as Record<string, number>);
+    }, {} as Record<string, { value: number, icon: string }>);
 
-    return Object.entries(byCategory).map(([name, value]) => ({
+    return Object.entries(byCategory).map(([name, data]) => ({
       name,
-      value
+      value: data.value,
+      icon: data.icon,
     }));
   }, [reportableTransactions]);
   
