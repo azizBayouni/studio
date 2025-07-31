@@ -39,7 +39,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CalendarIcon, Download, Paperclip, Trash2, X } from 'lucide-react';
+import { CalendarIcon, Download, Paperclip, Trash2, X, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { categories, wallets, currencies, events, type Category } from '@/lib/data';
@@ -53,6 +53,7 @@ import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getCategoryDepth } from '@/services/category-service';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -79,6 +80,7 @@ export function EditTransactionDialog({
   const [defaultCurrency, setDefaultCurrency] = useState('');
   const [eventId, setEventId] = useState<string | undefined>(undefined);
   const [excludeFromReport, setExcludeFromReport] = useState(false);
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
   const { toast } = useToast();
 
   const convertAmount = useCallback(async (
@@ -263,7 +265,7 @@ export function EditTransactionDialog({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
   
-  const renderCategoryOptions = () => {
+  const renderCategoryOptions = (isCommand: boolean) => {
     const topLevelCategories = selectableCategories.filter(c => c.parentId === null);
 
     const getOptionsForParent = (parentId: string | null, level: number): JSX.Element[] => {
@@ -271,35 +273,89 @@ export function EditTransactionDialog({
             .filter(c => c.parentId === parentId)
             .flatMap(c => {
                 const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
-                const option = (
-                    <SelectItem
-                        key={c.id}
-                        value={c.name}
-                        disabled={!isSelectable}
-                        className={cn(isSelectable ? 'font-normal' : 'font-semibold text-muted-foreground', `pl-${4 + level * 4}`)}
-                    >
-                        {c.name}
-                    </SelectItem>
-                );
-                const children = getOptionsForParent(c.id, level + 1);
-                return [option, ...children];
+                
+                if (isCommand) {
+                     const item = (
+                        <CommandItem
+                            key={c.id}
+                            value={c.name}
+                            disabled={!isSelectable}
+                            onSelect={(currentValue) => {
+                                setCategory(currentValue === category ? "" : currentValue)
+                                setIsCategoryPopoverOpen(false)
+                            }}
+                            className={cn(isSelectable ? 'font-normal' : 'font-semibold text-muted-foreground', `pl-${4 + level * 4}`)}
+                        >
+                             <Check
+                                className={cn(
+                                    "mr-2 h-4 w-4",
+                                    category.toLowerCase() === c.name.toLowerCase() ? "opacity-100" : "opacity-0"
+                                )}
+                            />
+                            {c.name}
+                        </CommandItem>
+                    );
+                    const children = getOptionsForParent(c.id, level + 1);
+                    return [item, ...children];
+
+                } else {
+                    const item = (
+                        <SelectItem
+                            key={c.id}
+                            value={c.name}
+                            disabled={!isSelectable}
+                            className={cn(isSelectable ? 'font-normal' : 'font-semibold text-muted-foreground', `pl-${4 + level * 4}`)}
+                        >
+                            {c.name}
+                        </SelectItem>
+                    );
+                    const children = getOptionsForParent(c.id, level + 1);
+                    return [item, ...children];
+                }
+
             });
     };
 
     return topLevelCategories.flatMap(c => {
        const isSelectable = getCategoryDepth(c.id, selectableCategories) > 0;
-       const option = (
-           <SelectItem
-                key={c.id}
-                value={c.name}
-                disabled={!isSelectable}
-                className="font-bold"
-            >
-                {c.name}
-            </SelectItem>
-       );
-       const children = getOptionsForParent(c.id, 1);
-       return [option, ...children];
+        if (isCommand) {
+             const item = (
+                <CommandItem
+                    key={c.id}
+                    value={c.name}
+                    disabled={!isSelectable}
+                    onSelect={(currentValue) => {
+                        setCategory(currentValue === category ? "" : currentValue)
+                        setIsCategoryPopoverOpen(false)
+                    }}
+                    className="font-bold"
+                >
+                     <Check
+                        className={cn(
+                            "mr-2 h-4 w-4",
+                            category.toLowerCase() === c.name.toLowerCase() ? "opacity-100" : "opacity-0"
+                        )}
+                    />
+                    {c.name}
+                </CommandItem>
+            );
+            const children = getOptionsForParent(c.id, 1);
+            return [item, ...children];
+
+        } else {
+            const item = (
+                <SelectItem
+                        key={c.id}
+                        value={c.name}
+                        disabled={!isSelectable}
+                        className="font-bold"
+                    >
+                        {c.name}
+                </SelectItem>
+            );
+            const children = getOptionsForParent(c.id, 1);
+            return [item, ...children];
+        }
     });
   };
 
@@ -410,12 +466,32 @@ export function EditTransactionDialog({
             </div>
             <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>{renderCategoryOptions()}</SelectContent>
-                </Select>
+                <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isCategoryPopoverOpen}
+                        className="w-full justify-between"
+                        >
+                        {category
+                            ? selectableCategories.find((c) => c.name.toLowerCase() === category.toLowerCase())?.name
+                            : "Select a category"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                        <Command>
+                        <CommandInput placeholder="Search category..." />
+                        <CommandList>
+                            <CommandEmpty>No category found.</CommandEmpty>
+                            <CommandGroup>
+                                {renderCategoryOptions(true)}
+                            </CommandGroup>
+                        </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
             </div>
              <div className="space-y-2">
               <Label htmlFor="event">Event (Optional)</Label>
