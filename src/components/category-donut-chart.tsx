@@ -34,6 +34,10 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCurrency, maximumFractionDigits: 0 }).format(value);
   }
 
+  const formatCurrencyNoSymbol = (value: number) => {
+    return new Intl.NumberFormat('en-US', { style: 'decimal', maximumFractionDigits: 0 }).format(value);
+  }
+
   return (
     <div className="w-full h-80 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
@@ -71,13 +75,18 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
                         const lx2 = x + (x > cx ? -10 : 10);
                         const ly2 = y;
                         
+                        const currencyValue = formatCurrencyNoSymbol(data[index].value);
+                        
                         return (
                            <g>
                                 <path d={`M${lx1},${ly1}L${lx2},${ly2}`} stroke="hsl(var(--border))" fill="none" />
-                                <text x={x} y={y - 12} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-sm font-bold fill-foreground">
+                                <text x={x} y={y - 14} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-sm font-bold fill-foreground">
                                     {`${(percent * 100).toFixed(0)}%`}
                                 </text>
-                                <text x={x} y={y + 5} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="24">
+                                 <text x={x} y={y} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs fill-muted-foreground">
+                                     {currencyValue}
+                                </text>
+                                <text x={x} y={y + 20} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="24">
                                      {data[index].icon}
                                 </text>
                            </g>
