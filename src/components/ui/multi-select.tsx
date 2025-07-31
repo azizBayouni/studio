@@ -21,8 +21,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { getCategoryDepth } from '@/services/category-service';
-import { categories } from '@/lib/data';
+import { categories as allCategories } from '@/lib/data';
 import { Separator } from './separator';
 
 export type MultiSelectOption = {
@@ -54,13 +53,24 @@ export function MultiSelect({
     onChange(selected.filter((i) => i !== item));
   };
   
-  const handleSelect = (value: string) => {
-     onChange(
-        selected.includes(value)
-            ? selected.filter((item) => item !== value)
-            : [...selected, value]
-    );
-  }
+  const handleSelect = (categoryId: string) => {
+    const getDescendants = (id: string): string[] => {
+      const children = allCategories.filter(c => c.parentId === id);
+      return [id, ...children.flatMap(c => getDescendants(c.id))];
+    };
+
+    const descendants = getDescendants(categoryId);
+    const isSelected = selected.includes(categoryId);
+
+    if (isSelected) {
+      // Deselect the category and all its descendants
+      onChange(selected.filter(s => !descendants.includes(s)));
+    } else {
+      // Select the category and all its descendants
+      const newSelected = [...new Set([...selected, ...descendants])];
+      onChange(newSelected);
+    }
+  };
 
   const allSelected = options.length > 0 && options.length === selected.length;
 
