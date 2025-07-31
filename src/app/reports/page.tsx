@@ -13,7 +13,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { getDefaultCurrency } from '@/services/settings-service';
 import type { DateRange } from 'react-day-picker';
 import { 
-  parseISO, isWithinInterval, endOfDay, startOfDay, subDays, 
+  parseISO, isWithinInterval, endOfDay, startOfDay, 
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, 
   subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter, 
   isSameDay, isSameWeek, isSameMonth, isSameQuarter, isSameYear,
@@ -299,3 +299,5 @@ export default function ReportsPage() {
     </>
   );
 }
+
+    
