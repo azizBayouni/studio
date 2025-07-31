@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -42,10 +43,7 @@ export function CategoryExpenseList({ data }: CategoryExpenseListProps) {
       {sortedData.map((item, index) => (
         <div key={item.name} className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: COLORS[index % COLORS.length] }}
-            />
+             <span className="text-lg">{item.icon}</span>
             <span className="text-sm">{item.name}</span>
           </div>
           <span className="text-sm font-medium">

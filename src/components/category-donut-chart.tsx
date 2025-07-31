@@ -4,10 +4,9 @@
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useMemo } from 'react';
-import { getDefaultCurrency } from '@/services/settings-service';
 
 interface CategoryDonutChartProps {
-    data: { name: string; value: number }[];
+    data: { name: string; value: number; icon: string }[];
 }
 
 const COLORS = [
@@ -25,43 +24,60 @@ const COLORS = [
     '#f97316',
 ];
 
+const RADIAN = Math.PI / 180;
+const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payload }: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 1.3;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const sin = Math.sin(-RADIAN * midAngle);
+  const cos = Math.cos(-RADIAN * midAngle);
+  const sx = cx + (outerRadius + 10) * cos;
+  const sy = cy + (outerRadius + 10) * sin;
+  const mx = cx + (outerRadius + 30) * cos;
+  const my = cy + (outerRadius + 30) * sin;
+  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+  const ey = my;
+
+  return (
+    <g>
+        {/* Line from pie to label */}
+        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke="hsl(var(--muted-foreground))" fill="none" />
+        {/* Icon */}
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey - 10} textAnchor="middle" dominantBaseline="central" fontSize="24">
+            {payload.icon}
+        </text>
+        {/* Percentage */}
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey + 10} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="14" fontWeight="bold">
+            {`${(percent * 100).toFixed(0)}%`}
+        </text>
+    </g>
+  );
+};
+
 
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
-  const defaultCurrency = getDefaultCurrency();
   const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: defaultCurrency, maximumFractionDigits: 0 }).format(value);
-  }
 
   return (
     <div className="w-full h-64 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
-            <PieChart width={400} height={400}>
+            <PieChart width={400} height={400} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
                  <text
                     x="50%"
-                    y="45%"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="fill-muted-foreground text-sm font-medium"
-                    >
-                    Total Expenses
-                    </text>
-                    <text
-                    x="50%"
-                    y="55%"
+                    y="50%"
                     textAnchor="middle"
                     dominantBaseline="middle"
                     className="fill-foreground text-2xl font-bold"
                     >
-                    {formatCurrency(total)}
+                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(total)}
                 </text>
                 <Pie
                     data={data}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    innerRadius="65%"
+                    label={<CustomLabel />}
+                    innerRadius="60%"
                     outerRadius="80%"
                     paddingAngle={2}
                     dataKey="value"
