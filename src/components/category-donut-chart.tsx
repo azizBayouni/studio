@@ -105,7 +105,12 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
                 <div key={entry.name} className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                     <span className="text-muted-foreground">{entry.name}</span>
-                    <span className="font-medium ml-auto">{formatCurrency(entry.value)}</span>
+                    <div className="ml-auto text-right">
+                      <span className="font-medium">{formatCurrency(entry.value)}</span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {total > 0 ? ((entry.value / total) * 100).toFixed(1) : 0}%
+                      </span>
+                    </div>
                 </div>
             ))}
        </div>
