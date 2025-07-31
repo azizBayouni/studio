@@ -5,7 +5,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } fro
 import { ChartTooltipContent, ChartContainer, ChartConfig } from '@/components/ui/chart';
 import { useMemo, useState, useEffect } from 'react';
 import { transactions as allTransactions } from '@/lib/data';
-import { subMonths, format, startOfMonth, endOfMonth, parseISO, isWithinInterval } from 'date-fns';
+import { subMonths, format, startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfYear, eachMonthOfInterval, endOfYear } from 'date-fns';
 import { getDefaultCurrency } from '@/services/settings-service';
 
 const chartConfig = {
@@ -19,7 +19,11 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export function Overview() {
+type OverviewProps = {
+    timespan: '6m' | '12m' | 'ytd';
+}
+
+export function Overview({ timespan }: OverviewProps) {
   const [transactions, setTransactions] = useState(allTransactions);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
 
@@ -37,11 +41,24 @@ export function Overview() {
     const monthlyData: { name: string; income: number; expense: number }[] = [];
     const now = new Date();
 
-    for (let i = 6; i >= 0; i--) {
-      const targetMonth = subMonths(now, i);
-      const monthStart = startOfMonth(targetMonth);
-      const monthEnd = endOfMonth(targetMonth);
-      const monthName = format(targetMonth, 'MMM');
+    let startDate: Date;
+    if (timespan === 'ytd') {
+        startDate = startOfYear(now);
+    } else {
+        const monthsToSubtract = timespan === '6m' ? 5 : 11;
+        startDate = subMonths(startOfMonth(now), monthsToSubtract);
+    }
+    
+    const months = eachMonthOfInterval({
+        start: startDate,
+        end: now
+    });
+
+
+    for (const month of months) {
+      const monthStart = startOfMonth(month);
+      const monthEnd = endOfMonth(month);
+      const monthName = format(month, 'MMM');
 
       const income = reportableTransactions
         .filter(t => t.type === 'income' && isWithinInterval(parseISO(t.date), { start: monthStart, end: monthEnd }))
@@ -55,7 +72,7 @@ export function Overview() {
     }
 
     return monthlyData;
-  }, [transactions]);
+  }, [transactions, timespan]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {

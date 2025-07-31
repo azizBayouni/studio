@@ -28,6 +28,7 @@ import { MonthlyReportCard } from '@/components/monthly-report-card';
 import { TrendingReportCard } from '@/components/trending-report-card';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
 import { isThisMonth, parseISO } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -35,6 +36,8 @@ export default function Dashboard() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [forceRerender, setForceRerender] = useState(0);
+  const [overviewTimespan, setOverviewTimespan] = useState<'6m' | '12m' | 'ytd'>('6m');
+
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -70,9 +73,14 @@ export default function Dashboard() {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    const activePayables = allDebts.filter(d => d.type === 'payable' && d.status === 'unpaid');
-    const activeReceivables = allDebts.filter(d => d.type === 'receivable' && d.status === 'unpaid');
-    const activeDebtsAmount = activePayables.reduce((sum, d) => sum + d.amount, 0);
+    const activePayables = allDebts.filter(d => d.type === 'payable' && d.status !== 'paid');
+    const activeReceivables = allDebts.filter(d => d.type === 'receivable' && d.status !== 'paid');
+    
+    const activeDebtsAmount = activePayables.reduce((sum, d) => {
+        const totalPaid = d.payments.reduce((paidSum, p) => paidSum + p.amount, 0);
+        return sum + (d.amount - totalPaid);
+    }, 0);
+
 
     return {
         totalBalance,
@@ -84,6 +92,7 @@ export default function Dashboard() {
         recentTransactions: reportableTransactions.slice(0, 5),
         totalTransactionsThisMonth: reportableTransactions.length,
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceRerender]);
 
   const formatCurrency = (amount: number) => {
@@ -178,11 +187,21 @@ export default function Dashboard() {
                 <TrendingReportCard />
             </div>
             <Card className="lg:col-span-4">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Overview</CardTitle>
+                 <Select value={overviewTimespan} onValueChange={(v) => setOverviewTimespan(v as '6m' | '12m' | 'ytd')}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select timespan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="6m">Last 6 months</SelectItem>
+                        <SelectItem value="12m">Last 12 months</SelectItem>
+                        <SelectItem value="ytd">Year-to-date</SelectItem>
+                    </SelectContent>
+                </Select>
               </CardHeader>
               <CardContent className="pl-2">
-                <Overview />
+                <Overview timespan={overviewTimespan} />
               </CardContent>
             </Card>
             <Card className="lg:col-span-3">
