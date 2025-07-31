@@ -28,6 +28,7 @@ import { Progress } from '@/components/ui/progress';
 import { CategoryExpenseList } from '@/components/category-expense-list';
 import { TimeRangePicker } from '@/components/time-range-picker';
 import { useSearchParams } from 'next/navigation';
+import { CategoryDonutChart } from '@/components/category-donut-chart';
 
 export default function ReportsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
@@ -140,14 +141,14 @@ export default function ReportsPage() {
     const expenses = reportableTransactions.filter(t => t.type === 'expense');
     
     const categoryMap = new Map(categories.map(c => [c.name, c]));
-    const parentMap = new Map(categories.map(c => [c.id, c]));
+    const parentMap = new Map(categories.map(c => [c.id, c.parentId]));
 
     const getTopLevelParent = (categoryName: string) => {
       let current = categoryMap.get(categoryName);
       if (!current) return null;
 
       while (current.parentId) {
-        const parent = parentMap.get(current.parentId);
+        const parent = categories.find(c => c.id === current!.parentId);
         if (!parent) break;
         current = parent;
       }
@@ -309,9 +310,14 @@ export default function ReportsPage() {
                     </div>
                 </Card>
             </div>
-            {expenseByCategory.length > 0 && (
-                <div className="mt-4">
-                    <CategoryExpenseList data={expenseByCategory} />
+             {expenseByCategory.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                    <div>
+                        <CategoryDonutChart data={expenseByCategory} />
+                    </div>
+                    <div>
+                        <CategoryExpenseList data={expenseByCategory} />
+                    </div>
                 </div>
             )}
         </CardContent>
