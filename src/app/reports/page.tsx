@@ -18,7 +18,8 @@ import {
   subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter, 
   isSameDay, isSameWeek, isSameMonth, isSameQuarter, isSameYear,
   addDays, addWeeks, addMonths, addQuarters, addYears,
-  format
+  format,
+  subDays
 } from 'date-fns';
 import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -137,13 +138,27 @@ export default function ReportsPage() {
 
   const expenseByCategory = useMemo(() => {
     const expenses = reportableTransactions.filter(t => t.type === 'expense');
+    
+    const categoryMap = new Map(categories.map(c => [c.name, c]));
+    const parentMap = new Map(categories.map(c => [c.id, c]));
+
+    const getTopLevelParent = (categoryName: string) => {
+      let current = categoryMap.get(categoryName);
+      if (!current) return null;
+
+      while (current.parentId) {
+        const parent = parentMap.get(current.parentId);
+        if (!parent) break;
+        current = parent;
+      }
+      return current;
+    };
+    
     const byCategory = expenses.reduce((acc, curr) => {
-        const parentCategoryName = categories.find(c => c.name === curr.category)?.parentId 
-            ? categories.find(p => p.id === categories.find(c => c.name === curr.category)?.parentId)?.name
-            : curr.category;
+      const topLevelParent = getTopLevelParent(curr.category);
         
-        if (parentCategoryName) {
-            acc[parentCategoryName] = (acc[parentCategoryName] || 0) + curr.amount;
+        if (topLevelParent) {
+            acc[topLevelParent.name] = (acc[topLevelParent.name] || 0) + curr.amount;
         }
         return acc;
     }, {} as Record<string, number>);
@@ -308,5 +323,7 @@ export default function ReportsPage() {
     </>
   );
 }
+
+    
 
     
