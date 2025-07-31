@@ -111,9 +111,9 @@ export function EditWalletDialog({
                       {icon || '...'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
+                  <PopoverContent className="w-auto p-0">
                      <ScrollArea className="h-48">
-                        <div className="grid grid-cols-5 gap-2">
+                        <div className="grid grid-cols-5 gap-2 p-2">
                         {emojiIcons.map((emoji) => (
                             <Button
                             key={emoji}
@@ -144,7 +144,9 @@ export function EditWalletDialog({
                     <SelectValue placeholder="Select a currency" />
                   </SelectTrigger>
                   <SelectContent>
-                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                     <ScrollArea className="h-48">
+                        {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
                  <p className="text-xs text-muted-foreground">

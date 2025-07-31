@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -31,6 +32,7 @@ import { updateCategory, getCategoryDepth } from '@/services/category-service';
 import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
 import { cn } from '@/lib/utils';
+import { ScrollArea } from './ui/scroll-area';
 
 interface EditCategoryDialogProps {
   isOpen: boolean;
@@ -163,22 +165,24 @@ export function EditCategoryDialog({
                       {icon || '...'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
-                    <div className="grid grid-cols-5 gap-2">
-                      {emojiIcons.map((emoji) => (
-                        <Button
-                          key={emoji}
-                          variant="ghost"
-                          className="text-lg p-2"
-                          onClick={() => {
-                            setIcon(emoji);
-                            setIsPopoverOpen(false);
-                          }}
-                        >
-                          {emoji}
-                        </Button>
-                      ))}
-                    </div>
+                  <PopoverContent className="w-auto p-0">
+                    <ScrollArea className="h-48">
+                        <div className="grid grid-cols-5 gap-2 p-2">
+                        {emojiIcons.map((emoji) => (
+                            <Button
+                            key={emoji}
+                            variant="ghost"
+                            className="text-lg p-2"
+                            onClick={() => {
+                                setIcon(emoji);
+                                setIsPopoverOpen(false);
+                            }}
+                            >
+                            {emoji}
+                            </Button>
+                        ))}
+                        </div>
+                    </ScrollArea>
                   </PopoverContent>
                 </Popover>
               </div>

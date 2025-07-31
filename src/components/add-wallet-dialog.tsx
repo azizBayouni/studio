@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -30,6 +31,7 @@ import { addWallet } from '@/services/wallet-service';
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultCurrency } from '@/services/settings-service';
+import { ScrollArea } from './ui/scroll-area';
 
 interface AddWalletDialogProps {
   isOpen: boolean;
@@ -91,22 +93,24 @@ export function AddWalletDialog({
                       {icon}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
-                    <div className="grid grid-cols-5 gap-2">
-                      {emojiIcons.map((emoji) => (
-                        <Button
-                          key={emoji}
-                          variant="ghost"
-                          className="text-lg p-2"
-                          onClick={() => {
-                            setIcon(emoji);
-                            setIsPopoverOpen(false);
-                          }}
-                        >
-                          {emoji}
-                        </Button>
-                      ))}
-                    </div>
+                  <PopoverContent className="w-auto p-0">
+                    <ScrollArea className="h-48">
+                        <div className="grid grid-cols-5 gap-2 p-2">
+                        {emojiIcons.map((emoji) => (
+                            <Button
+                            key={emoji}
+                            variant="ghost"
+                            className="text-lg p-2"
+                            onClick={() => {
+                                setIcon(emoji);
+                                setIsPopoverOpen(false);
+                            }}
+                            >
+                            {emoji}
+                            </Button>
+                        ))}
+                        </div>
+                    </ScrollArea>
                   </PopoverContent>
                 </Popover>
               </div>
@@ -122,7 +126,9 @@ export function AddWalletDialog({
                     <SelectValue placeholder="Select a currency" />
                   </SelectTrigger>
                   <SelectContent>
-                    {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    <ScrollArea className="h-48">
+                        {currencies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </ScrollArea>
                   </SelectContent>
                 </Select>
               </div>
