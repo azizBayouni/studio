@@ -7,6 +7,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { transactions as allTransactions } from '@/lib/data';
 import { subMonths, format, startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfYear, eachMonthOfInterval, endOfYear } from 'date-fns';
 import { getDefaultCurrency } from '@/services/settings-service';
+import { useRouter } from 'next/navigation';
 
 const chartConfig = {
   income: {
@@ -26,6 +27,7 @@ type OverviewProps = {
 export function Overview({ timespan }: OverviewProps) {
   const [transactions, setTransactions] = useState(allTransactions);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const router = useRouter();
 
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
@@ -38,7 +40,7 @@ export function Overview({ timespan }: OverviewProps) {
 
   const data = useMemo(() => {
     const reportableTransactions = transactions.filter(t => !t.excludeFromReport);
-    const monthlyData: { name: string; income: number; expense: number }[] = [];
+    const monthlyData: { name: string; income: number; expense: number; monthStart: string; monthEnd: string; }[] = [];
     const now = new Date();
 
     let startDate: Date;
@@ -68,7 +70,13 @@ export function Overview({ timespan }: OverviewProps) {
         .filter(t => t.type === 'expense' && isWithinInterval(parseISO(t.date), { start: monthStart, end: monthEnd }))
         .reduce((sum, t) => sum + t.amount, 0);
         
-      monthlyData.push({ name: monthName, income, expense });
+      monthlyData.push({ 
+          name: monthName, 
+          income, 
+          expense,
+          monthStart: format(monthStart, 'yyyy-MM-dd'),
+          monthEnd: format(monthEnd, 'yyyy-MM-dd')
+      });
     }
 
     return monthlyData;
@@ -83,10 +91,17 @@ export function Overview({ timespan }: OverviewProps) {
     }).format(value);
   }
 
+  const handleBarClick = (payload: any) => {
+    if (payload && payload.activePayload && payload.activePayload.length > 0) {
+      const { monthStart, monthEnd } = payload.activePayload[0].payload;
+      router.push(`/reports?from=${monthStart}&to=${monthEnd}`);
+    }
+  };
+
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
       <ResponsiveContainer width="100%" height={350}>
-        <BarChart data={data}>
+        <BarChart data={data} onClick={handleBarClick}>
           <XAxis
             dataKey="name"
             stroke="hsl(var(--muted-foreground))"
@@ -114,8 +129,8 @@ export function Overview({ timespan }: OverviewProps) {
               }}/>}
           />
           <Legend />
-          <Bar dataKey="income" fill="hsl(var(--accent))" name="Income" radius={[4, 4, 0, 0]} />
-          <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="income" fill="hsl(var(--accent))" name="Income" radius={[4, 4, 0, 0]} className="cursor-pointer" />
+          <Bar dataKey="expense" fill="hsl(var(--destructive))" name="Expense" radius={[4, 4, 0, 0]} className="cursor-pointer" />
         </BarChart>
       </ResponsiveContainer>
     </ChartContainer>

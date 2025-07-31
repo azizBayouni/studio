@@ -26,9 +26,11 @@ import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-selec
 import { Progress } from '@/components/ui/progress';
 import { CategoryDonutChart } from '@/components/category-donut-chart';
 import { TimeRangePicker } from '@/components/time-range-picker';
+import { useSearchParams } from 'next/navigation';
 
 export default function ReportsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const searchParams = useSearchParams();
   
   // State for filters
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
@@ -37,10 +39,17 @@ export default function ReportsPage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [dateOffset, setDateOffset] = useState(0);
 
-
   useEffect(() => {
     setDefaultCurrency(getDefaultCurrency());
-  }, []);
+
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
+    if(fromParam && toParam) {
+        setCustomDateRange({ from: parseISO(fromParam), to: parseISO(toParam) });
+        setTimeRange('custom');
+    }
+
+  }, [searchParams]);
 
   const dateRange = useMemo(() => {
     const now = new Date();
