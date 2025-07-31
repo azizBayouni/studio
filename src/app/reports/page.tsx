@@ -21,18 +21,24 @@ import {
   format,
   subDays
 } from 'date-fns';
-import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight, BarChartHorizontalBig } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { Progress } from '@/components/ui/progress';
 import { CategoryExpenseList } from '@/components/category-expense-list';
 import { TimeRangePicker } from '@/components/time-range-picker';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { CategoryDonutChart } from '@/components/category-donut-chart';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
+import { getCategoryDepth } from '@/services/category-service';
 
 export default function ReportsPage() {
-  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [defaultCurrency, setDefaultCurrency] = useState('');
+  const [isClient, setIsClient] = useState(false);
   const searchParams = useSearchParams();
+  const router = useRouter();
   
   // State for filters
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
@@ -42,13 +48,23 @@ export default function ReportsPage() {
   const [dateOffset, setDateOffset] = useState(0);
 
   useEffect(() => {
+    setIsClient(true);
     setDefaultCurrency(getDefaultCurrency());
 
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
     if(fromParam && toParam) {
-        setCustomDateRange({ from: parseISO(fromParam), to: parseISO(toParam) });
-        setTimeRange('custom');
+        try {
+            const fromDate = parseISO(fromParam);
+            const toDate = parseISO(toParam);
+            // Basic validation
+            if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
+                setCustomDateRange({ from: fromDate, to: toDate });
+                setTimeRange('custom');
+            }
+        } catch (e) {
+            console.error("Invalid date in search params", e);
+        }
     }
 
   }, [searchParams]);
@@ -76,7 +92,10 @@ export default function ReportsPage() {
       case 'all':
         return { from: undefined, to: undefined };
       case 'custom':
-        return customDateRange;
+        return customDateRange ? {
+            from: customDateRange.from ? startOfDay(customDateRange.from) : undefined,
+            to: customDateRange.to ? endOfDay(customDateRange.to) : undefined
+        } : undefined;
       case 'this-month':
       default:
          baseDate = addMonths(now, dateOffset);
@@ -136,6 +155,16 @@ export default function ReportsPage() {
     value: w.name,
     label: w.name,
   }));
+  
+  const categoryOptions = useMemo(() => {
+    return categories
+      .filter(c => c.parentId === null) // Only top-level categories
+      .map(c => ({
+        value: c.id,
+        label: c.name,
+        depth: getCategoryDepth(c.id)
+      }));
+  }, []);
 
   const expenseByCategory = useMemo(() => {
     const expenses = reportableTransactions.filter(t => t.type === 'expense');
@@ -171,10 +200,36 @@ export default function ReportsPage() {
       name,
       value: data.value,
       icon: data.icon,
-    }));
+    })).sort((a,b) => b.value - a.value);
   }, [reportableTransactions]);
   
   const handleTimeRangeChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    if (value === 'custom') {
+        // Let the custom date picker handle the params
+    } else if (value === 'all') {
+        newParams.delete('from');
+        newParams.delete('to');
+    } else {
+        const now = new Date();
+        let from, to;
+        if (value === 'this-month') {
+            from = startOfMonth(now);
+            to = endOfMonth(now);
+        } else if (value === 'last-month') {
+            from = startOfMonth(subMonths(now, 1));
+            to = endOfMonth(subMonths(now, 1));
+        } else if (value === 'year') {
+            from = startOfYear(now);
+            to = endOfYear(now);
+        }
+        if (from && to) {
+            newParams.set('from', from.toISOString());
+            newParams.set('to', to.toISOString());
+        }
+    }
+    
+    router.push(`/reports?${newParams.toString()}`);
     setTimeRange(value);
     setDateOffset(0); // Reset offset when range type changes
   };
@@ -219,6 +274,46 @@ export default function ReportsPage() {
     return !['all', 'custom', 'last-month'].includes(timeRange);
   }, [timeRange]);
 
+  const handleDateNavigation = (direction: 'next' | 'prev') => {
+    const offset = direction === 'next' ? 1 : -1;
+    setDateOffset(d => d + offset);
+  }
+
+  const buildCategoryLink = (categoryName: string) => {
+    const params = new URLSearchParams(searchParams);
+    return `/reports/${encodeURIComponent(categoryName)}?${params.toString()}`;
+  }
+
+
+  if (!isClient) {
+    return (
+        <div className="flex-1 space-y-4 p-4 md:p-6">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-8 w-full" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-10 w-40 mb-2" />
+                    <Skeleton className="h-4 w-full" />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-40" />
+                </CardHeader>
+                 <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Skeleton className="h-20 w-full" />
+                        <Skeleton className="h-20 w-full" />
+                    </div>
+                 </CardContent>
+            </Card>
+        </div>
+    )
+  }
+
   return (
     <>
     <div className="flex-1 space-y-4 p-4 md:p-6">
@@ -244,13 +339,13 @@ export default function ReportsPage() {
        </header>
 
       <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
-        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d - 1)} disabled={!canNavigate}>
+        <Button variant="ghost" size="icon" onClick={() => handleDateNavigation('prev')} disabled={!canNavigate}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <div className="text-center font-semibold text-foreground">
           {getDateRangeLabel()}
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setDateOffset(d => d + 1)} disabled={!canNavigate || dateOffset >= 0}>
+        <Button variant="ghost" size="icon" onClick={() => handleDateNavigation('next')} disabled={!canNavigate || dateOffset >= 0}>
             <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
@@ -290,36 +385,42 @@ export default function ReportsPage() {
             <CardTitle className="text-sm font-medium">Category Report</CardTitle>
         </CardHeader>
         <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-                <Card className="p-4">
-                    <div className="flex justify-between items-start">
+            <Tabs defaultValue="breakdown" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
+                    <TabsTrigger value="chart">Chart</TabsTrigger>
+                </TabsList>
+                <TabsContent value="breakdown" className="space-y-4">
+                     <Link href={buildCategoryLink('all-expense')}>
+                        <Card className="p-4 hover:bg-muted/50">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Total Expense</p>
+                                    <p className="font-semibold text-destructive">{formatCurrency(summary.totalExpense)}</p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                        </Card>
+                    </Link>
+                    {expenseByCategory.length > 0 && (
                         <div>
-                            <p className="text-sm text-muted-foreground">Income</p>
-                            <p className="font-semibold text-accent">{formatCurrency(summary.totalIncome)}</p>
+                            <CategoryExpenseList data={expenseByCategory} />
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                </Card>
-                <Card className="p-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm text-muted-foreground">Expense</p>
-                            <p className="font-semibold text-destructive">{formatCurrency(summary.totalExpense)}</p>
+                    )}
+                </TabsContent>
+                <TabsContent value="chart">
+                     {expenseByCategory.length > 0 ? (
+                        <div className="grid grid-cols-1 items-center">
+                            <CategoryDonutChart data={expenseByCategory} />
                         </div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                </Card>
-            </div>
-             {expenseByCategory.length > 0 && (
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                    <div>
-                        <CategoryDonutChart data={expenseByCategory} />
-                    </div>
-                    <div>
-                        <CategoryExpenseList data={expenseByCategory} />
-                    </div>
-                </div>
-            )}
+                    ) : (
+                        <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
+                            <BarChartHorizontalBig className="h-10 w-10 mb-2" />
+                            <p>No expense data for this period.</p>
+                        </div>
+                    )}
+                </TabsContent>
+            </Tabs>
         </CardContent>
       </Card>
     </div>
