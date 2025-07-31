@@ -1,6 +1,7 @@
 
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect, useMemo } from 'react';
 import {
   Card,
@@ -27,7 +28,7 @@ import { getDefaultCurrency } from '@/services/settings-service';
 import { MonthlyReportCard } from '@/components/monthly-report-card';
 import { TrendingReportCard } from '@/components/trending-report-card';
 import { EditTransactionDialog } from '@/components/edit-transaction-dialog';
-import { isThisMonth, parseISO } from 'date-fns';
+import { isThisMonth, parseISO, startOfMonth, endOfMonth, format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
@@ -81,6 +82,10 @@ export default function Dashboard() {
         return sum + (d.amount - totalPaid);
     }, 0);
 
+    const now = new Date();
+    const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+    const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
+
 
     return {
         totalBalance,
@@ -91,6 +96,7 @@ export default function Dashboard() {
         activeReceivablesCount: activeReceivables.length,
         recentTransactions: reportableTransactions.slice(0, 5),
         totalTransactionsThisMonth: reportableTransactions.length,
+        thisMonthQuery: `from=${monthStart}&to=${monthEnd}`
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [forceRerender]);
@@ -144,42 +150,48 @@ export default function Dashboard() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">This Month's Income</CardTitle>
-                <TrendingUp className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-accent">+{formatCurrency(dashboardData.monthlyIncome)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Based on reportable transactions
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">This Month's Expenses</CardTitle>
-                <TrendingDown className="h-4 w-4 text-destructive" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-destructive">-{formatCurrency(dashboardData.monthlyExpense)}</div>
-                 <p className="text-xs text-muted-foreground">
-                   Based on reportable transactions
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Debts</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(dashboardData.activeDebtsAmount)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {dashboardData.activePayablesCount} Payable, {dashboardData.activeReceivablesCount} Receivable
-                </p>
-              </CardContent>
-            </Card>
+            <Link href={`/reports?${dashboardData.thisMonthQuery}`}>
+              <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">This Month's Income</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-accent" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-accent">+{formatCurrency(dashboardData.monthlyIncome)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Based on reportable transactions
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href={`/reports?${dashboardData.thisMonthQuery}`}>
+              <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">This Month's Expenses</CardTitle>
+                  <TrendingDown className="h-4 w-4 text-destructive" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-destructive">-{formatCurrency(dashboardData.monthlyExpense)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Based on reportable transactions
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/debts">
+              <Card className="hover:bg-muted/50 transition-colors">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Active Debts</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(dashboardData.activeDebtsAmount)}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {dashboardData.activePayablesCount} Payable, {dashboardData.activeReceivablesCount} Receivable
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
              <div className="col-span-full grid gap-4 lg:grid-cols-2">
