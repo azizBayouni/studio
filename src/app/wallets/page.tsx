@@ -47,28 +47,28 @@ export default function WalletsPage() {
   const { toast } = useToast();
   
   useEffect(() => {
-    setDefaultWalletId(getDefaultWallet());
+    const refreshWallets = () => {
+        setDefaultWalletId(getDefaultWallet());
+        const updatedWallets = allWallets.map(w => ({
+            ...w,
+            balance: getWalletBalance(w.name)
+        }));
+        setWallets(updatedWallets);
+    }
     
-    // Calculate and set balances on mount
-    const updatedWallets = allWallets.map(w => ({
-      ...w,
-      balance: getWalletBalance(w.name)
-    }));
-    setWallets(updatedWallets);
+    refreshWallets();
 
     const handleDataChange = () => {
-       const updatedWallets = allWallets.map(w => ({
-        ...w,
-        balance: getWalletBalance(w.name)
-      }));
-      setWallets(updatedWallets);
+       refreshWallets();
     }
     window.addEventListener('transactionsUpdated', handleDataChange);
     window.addEventListener('storage', handleDataChange);
+    window.addEventListener('walletsUpdated', handleDataChange);
     
     return () => {
       window.removeEventListener('transactionsUpdated', handleDataChange);
       window.removeEventListener('storage', handleDataChange);
+      window.removeEventListener('walletsUpdated', handleDataChange);
     }
 
   }, []);
@@ -85,12 +85,6 @@ export default function WalletsPage() {
         description: "The wallet has been successfully deleted.",
         variant: "destructive"
     })
-    // Force a re-render
-    const updatedWallets = allWallets.map(w => ({
-      ...w,
-      balance: getWalletBalance(w.name)
-    }));
-    setWallets(updatedWallets);
   };
 
   const handleSetDefault = (walletId: string) => {
