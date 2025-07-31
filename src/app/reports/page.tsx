@@ -25,7 +25,7 @@ import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight 
 import { Button } from '@/components/ui/button';
 import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { Progress } from '@/components/ui/progress';
-import { CategoryDonutChart } from '@/components/category-donut-chart';
+import { CategoryExpenseList } from '@/components/category-expense-list';
 import { TimeRangePicker } from '@/components/time-range-picker';
 import { useSearchParams } from 'next/navigation';
 
@@ -311,7 +311,7 @@ export default function ReportsPage() {
             </div>
             {expenseByCategory.length > 0 && (
                 <div className="mt-4">
-                    <CategoryDonutChart data={expenseByCategory} />
+                    <CategoryExpenseList data={expenseByCategory} />
                 </div>
             )}
         </CardContent>
@@ -327,7 +327,3 @@ export default function ReportsPage() {
     </>
   );
 }
-
-    
-
-    
