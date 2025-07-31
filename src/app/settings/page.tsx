@@ -150,7 +150,7 @@ export default function SettingsPage() {
             'Currency': t.currency,
             'Date': t.date,
             'Event': eventName,
-            'Exclude Report': t.excludeFromReport ? 'Yes' : '',
+            'Exclude Report': t.excludeFromReport ? 'true' : 'false',
         };
     });
 
@@ -262,7 +262,7 @@ export default function SettingsPage() {
             currency: currency || getDefaultCurrency(),
             date: dateValue.toISOString().split('T')[0],
             eventId: eventObj?.id,
-            excludeFromReport: !!excludeReport,
+            excludeFromReport: excludeReport?.toLowerCase() === 'true',
           };
           newTransactions.push(newTransaction);
         });
@@ -605,5 +605,3 @@ export default function SettingsPage() {
     </>
   )
 }
-
-    
