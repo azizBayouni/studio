@@ -116,24 +116,6 @@ export function EditTransactionDialog({
     }
   }, [toast]);
 
-  const handleAmountChange = (value: string) => {
-    const numericValue = value === '' ? '' : parseFloat(value);
-    setOriginalAmount(numericValue);
-  };
-  
-  const handleAmountBlur = () => {
-    if (originalAmount) {
-       convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
-    }
-  };
-
-  const handleCurrencyChange = (newCurrency: string) => {
-    setTransactionCurrency(newCurrency);
-    if (originalAmount) {
-      convertAmount(Number(originalAmount), newCurrency, defaultCurrency);
-    }
-  };
-  
   const resetAndInitialize = useCallback(() => {
     const currentDefaultCurrency = getDefaultCurrency();
     setDefaultCurrency(currentDefaultCurrency);
@@ -161,20 +143,41 @@ export function EditTransactionDialog({
       // Since we save everything in default, this should be the same.
       // If we were to store original currency, this logic would need to change.
       setOriginalAmount(transaction.amount);
-
-
     }
   }, [transaction]);
-
 
   useEffect(() => {
     if (isOpen) {
       resetAndInitialize();
     }
   }, [isOpen, resetAndInitialize]);
-
   
+  const selectableCategories = useMemo(() => {
+    return categories.filter(c => {
+      const depth = getCategoryDepth(c.id);
+      return depth > 0;
+    });
+  }, []);
+
   if (!transaction) return null;
+
+  const handleAmountChange = (value: string) => {
+    const numericValue = value === '' ? '' : parseFloat(value);
+    setOriginalAmount(numericValue);
+  };
+  
+  const handleAmountBlur = () => {
+    if (originalAmount) {
+       convertAmount(Number(originalAmount), transactionCurrency, defaultCurrency);
+    }
+  };
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setTransactionCurrency(newCurrency);
+    if (originalAmount) {
+      convertAmount(Number(originalAmount), newCurrency, defaultCurrency);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -237,13 +240,6 @@ export function EditTransactionDialog({
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
   
-  const selectableCategories = useMemo(() => {
-    return categories.filter(c => {
-      const depth = getCategoryDepth(c.id);
-      return depth > 0;
-    });
-  }, []);
-
   const renderCategoryOptions = () => {
     const topLevelCategories = categories.filter(c => c.parentId === null);
 
