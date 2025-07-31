@@ -3,7 +3,7 @@
 'use client';
 
 import * as React from 'react';
-import { X, ChevronsUpDown } from 'lucide-react';
+import { X, ChevronsUpDown, Check } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getCategoryDepth } from '@/services/category-service';
 import { categories } from '@/lib/data';
+import { Separator } from './separator';
 
 export type MultiSelectOption = {
   value: string;
@@ -60,6 +61,17 @@ export function MultiSelect({
             : [...selected, value]
     );
   }
+
+  const allSelected = options.length > 0 && options.length === selected.length;
+
+  const handleToggleAll = () => {
+    if (allSelected) {
+      onChange([]);
+    } else {
+      onChange(options.map((option) => option.value));
+    }
+  };
+
 
   return (
     <Popover open={open} onOpenChange={setOpen} {...props}>
@@ -100,6 +112,23 @@ export function MultiSelect({
           <CommandList>
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup>
+                <CommandItem
+                    onSelect={handleToggleAll}
+                    className="text-sm font-medium"
+                >
+                    <div
+                        className={cn(
+                        'mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary',
+                        allSelected
+                            ? 'bg-primary text-primary-foreground'
+                            : 'opacity-50 [&_svg]:invisible'
+                        )}
+                    >
+                        <Check className="h-4 w-4" />
+                    </div>
+                    <span>{allSelected ? 'Deselect All' : 'Select All'}</span>
+                </CommandItem>
+                <Separator className="my-1" />
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
@@ -118,20 +147,7 @@ export function MultiSelect({
                         : 'opacity-50 [&_svg]:invisible'
                     )}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4"
-                    >
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
+                     <Check className="h-4 w-4" />
                   </div>
                   {option.label}
                 </CommandItem>
