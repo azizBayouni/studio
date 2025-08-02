@@ -12,7 +12,7 @@ import {
 import { getDefaultCurrency } from '@/services/settings-service';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   isWithinInterval,
   parseISO,
@@ -64,6 +64,17 @@ export default function CategoryReportDetails() {
     }
     return { from: null, to: null };
   }, [searchParams]);
+
+  const getCategoryDepth = (categoryId: string): number => {
+    let depth = 0;
+    let current = categories.find(c => c.id === categoryId);
+    while (current?.parentId) {
+        depth++;
+        current = categories.find(c => c.id === current!.parentId);
+        if (depth > 10) break; // Safety break for circular dependencies
+    }
+    return depth;
+  };
 
   const { filteredTransactions, categoryHierarchy } = useMemo(() => {
     const decodedCategoryName = decodeURIComponent(categoryName as string);
@@ -146,17 +157,6 @@ export default function CategoryReportDetails() {
       .sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categoryHierarchy]);
   
-  const getCategoryDepth = (categoryId: string): number => {
-    let depth = 0;
-    let current = categories.find(c => c.id === categoryId);
-    while (current?.parentId) {
-        depth++;
-        current = categories.find(c => c.id === current!.parentId);
-        if (depth > 10) break; // Safety break for circular dependencies
-    }
-    return depth;
-}
-
   const formatCurrency = (value: number) => {
     if (!defaultCurrency) return '...';
     return new Intl.NumberFormat('en-US', {
