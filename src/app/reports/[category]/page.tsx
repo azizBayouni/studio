@@ -44,6 +44,8 @@ export default function CategoryReportDetails() {
   const [isClient, setIsClient] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [activeTab, setActiveTab] = useState('breakdown');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -157,6 +159,21 @@ export default function CategoryReportDetails() {
       .sort((a, b) => b.value - a.value);
   }, [filteredTransactions, categoryHierarchy]);
   
+  const displayedTransactions = useMemo(() => {
+    if (!selectedSubCategory) {
+      return filteredTransactions;
+    }
+    return filteredTransactions.filter(t => {
+      let current = categories.find(c => c.name === t.category);
+      while(current) {
+        if (current.name === selectedSubCategory) return true;
+        if (!current.parentId) return false;
+        current = categories.find(c => c.id === current?.parentId);
+      }
+      return false;
+    });
+  }, [filteredTransactions, selectedSubCategory]);
+  
   const formatCurrency = (value: number) => {
     if (!defaultCurrency) return '...';
     return new Intl.NumberFormat('en-US', {
@@ -168,6 +185,11 @@ export default function CategoryReportDetails() {
   const handleRowClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
     setIsEditDialogOpen(true);
+  };
+
+  const handleSubCategoryClick = (categoryName: string) => {
+    setSelectedSubCategory(categoryName);
+    setActiveTab('transactions');
   };
 
   if (!isClient) {
@@ -200,7 +222,7 @@ export default function CategoryReportDetails() {
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h2 className="text-lg font-semibold">Expense Details</h2>
+          <h2 className="text-lg font-semibold">{decodedCategoryName}</h2>
         </header>
 
         <div className="grid grid-cols-2 gap-4">
@@ -218,7 +240,7 @@ export default function CategoryReportDetails() {
           </Card>
         </div>
 
-        <Tabs defaultValue="breakdown" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
             <TabsTrigger value="transactions">Transactions</TabsTrigger>
@@ -228,7 +250,7 @@ export default function CategoryReportDetails() {
               <CardContent className="pt-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                   <CategoryDonutChart data={expensesBySubCategory} />
-                  <CategoryExpenseList data={expensesBySubCategory} />
+                  <CategoryExpenseList data={expensesBySubCategory} onCategoryClick={handleSubCategoryClick}/>
                 </div>
               </CardContent>
             </Card>
@@ -236,6 +258,13 @@ export default function CategoryReportDetails() {
           <TabsContent value="transactions">
             <Card>
               <CardContent className="pt-6">
+                {selectedSubCategory && (
+                  <div className="mb-4">
+                    <Button variant="secondary" onClick={() => setSelectedSubCategory(null)}>
+                      Back to All Transactions
+                    </Button>
+                  </div>
+                )}
                 <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -248,7 +277,7 @@ export default function CategoryReportDetails() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTransactions.map((transaction) => (
+                      {displayedTransactions.map((transaction) => (
                         <TableRow
                           key={transaction.id}
                           onClick={() => handleRowClick(transaction)}

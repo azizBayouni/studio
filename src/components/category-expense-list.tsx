@@ -10,6 +10,7 @@ import { ChevronRight } from 'lucide-react';
 
 interface CategoryExpenseListProps {
   data: { name: string; value: number; icon: string }[];
+  onCategoryClick?: (categoryName: string) => void;
 }
 
 const COLORS = [
@@ -27,7 +28,7 @@ const COLORS = [
   '#f97316',
 ];
 
-export function CategoryExpenseList({ data }: CategoryExpenseListProps) {
+export function CategoryExpenseList({ data, onCategoryClick }: CategoryExpenseListProps) {
   const defaultCurrency = getDefaultCurrency();
   const searchParams = useSearchParams();
 
@@ -46,25 +47,41 @@ export function CategoryExpenseList({ data }: CategoryExpenseListProps) {
     const params = new URLSearchParams(searchParams);
     return `/reports/${encodeURIComponent(categoryName)}?${params.toString()}`;
   }
+  
+  const renderItem = (item: any, index: number) => {
+    const content = (
+      <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+        <div className="flex items-center gap-3">
+           <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}/>
+          <span className="text-sm font-medium">{item.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+           <span className="text-sm font-medium text-destructive">
+              {formatCurrency(item.value)}
+           </span>
+           <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+    );
+
+    if (onCategoryClick) {
+      return (
+        <div key={item.name} onClick={() => onCategoryClick(item.name)}>
+          {content}
+        </div>
+      );
+    }
+    
+    return (
+      <Link key={item.name} href={buildCategoryLink(item.name)}>
+        {content}
+      </Link>
+    );
+  };
 
   return (
     <div className="space-y-1">
-      {sortedData.map((item, index) => (
-        <Link key={item.name} href={buildCategoryLink(item.name)}>
-            <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-              <div className="flex items-center gap-3">
-                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}/>
-                <span className="text-sm font-medium">{item.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                 <span className="text-sm font-medium text-destructive">
-                    {formatCurrency(item.value)}
-                 </span>
-                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </div>
-        </Link>
-      ))}
+      {sortedData.map(renderItem)}
     </div>
   );
 }
