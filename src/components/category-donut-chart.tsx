@@ -3,7 +3,9 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { getDefaultCurrency } from '@/services/settings-service';
+import { Skeleton } from './ui/skeleton';
 
 interface CategoryDonutChartProps {
     data: { name: string; value: number; icon: string }[];
@@ -43,11 +45,11 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payl
         {/* Line from pie to label */}
         <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke="hsl(var(--muted-foreground))" fill="none" />
         {/* Icon */}
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey - 10} textAnchor="middle" dominantBaseline="central" fontSize="24">
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey - 5} textAnchor="middle" dominantBaseline="central" fontSize="24">
             {payload.icon}
         </text>
         {/* Percentage */}
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey + 10} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="14" fontWeight="bold">
+        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey + 15} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="14" fontWeight="bold">
             {`${(percent * 100).toFixed(0)}%`}
         </text>
     </g>
@@ -56,10 +58,31 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payl
 
 
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
+  const [isClient, setIsClient] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState('');
+
+  useEffect(() => {
+    setIsClient(true);
+    setDefaultCurrency(getDefaultCurrency());
+  }, []);
+
   const total = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: defaultCurrency,
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  if (!isClient) {
+    return <Skeleton className="h-80 w-full" />;
+  }
+
 
   return (
-    <div className="w-full h-64 flex items-center justify-center">
+    <div className="w-full h-80 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
             <PieChart width={400} height={400} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
                  <text
@@ -69,7 +92,7 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
                     dominantBaseline="middle"
                     className="fill-foreground text-2xl font-bold"
                     >
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(total)}
+                    {formatCurrency(total)}
                 </text>
                 <Pie
                     data={data}
