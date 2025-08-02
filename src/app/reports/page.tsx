@@ -280,7 +280,9 @@ export default function ReportsPage() {
   }
 
   const buildCategoryLink = (categoryName: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams();
+    if (dateRange?.from) params.set('from', dateRange.from.toISOString());
+    if (dateRange?.to) params.set('to', dateRange.to.toISOString());
     return `/reports/${encodeURIComponent(categoryName)}?${params.toString()}`;
   }
 
