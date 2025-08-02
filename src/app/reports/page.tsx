@@ -397,7 +397,6 @@ export default function ReportsPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-1">Net Income <HelpCircle className="h-4 w-4 text-muted-foreground"/></CardTitle>
-            <Button variant="link" className="text-sm">See details</Button>
         </CardHeader>
         <CardContent>
             <p className="text-2xl font-bold">{getSign(summary.netIncome)}{formatCurrency(summary.netIncome)}</p>
