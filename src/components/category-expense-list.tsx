@@ -53,7 +53,7 @@ export function CategoryExpenseList({ data }: CategoryExpenseListProps) {
         <Link key={item.name} href={buildCategoryLink(item.name)}>
             <div className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
               <div className="flex items-center gap-3">
-                 <span className="text-xl flex h-8 w-8 items-center justify-center bg-muted rounded-full" style={{ color: COLORS[index % COLORS.length] }}>{item.icon}</span>
+                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}/>
                 <span className="text-sm font-medium">{item.name}</span>
               </div>
               <div className="flex items-center gap-2">

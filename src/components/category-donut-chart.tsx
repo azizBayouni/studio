@@ -26,37 +26,6 @@ const COLORS = [
     '#f97316',
 ];
 
-const RADIAN = Math.PI / 180;
-const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, payload }: any) => {
-  const radius = innerRadius + (outerRadius - innerRadius) * 1.3;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const sin = Math.sin(-RADIAN * midAngle);
-  const cos = Math.cos(-RADIAN * midAngle);
-  const sx = cx + (outerRadius + 10) * cos;
-  const sy = cy + (outerRadius + 10) * sin;
-  const mx = cx + (outerRadius + 30) * cos;
-  const my = cy + (outerRadius + 30) * sin;
-  const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-  const ey = my;
-
-  return (
-    <g>
-        {/* Line from pie to label */}
-        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke="hsl(var(--muted-foreground))" fill="none" />
-        {/* Icon */}
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey - 5} textAnchor="middle" dominantBaseline="central" fontSize="24">
-            {payload.icon}
-        </text>
-        {/* Percentage */}
-        <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey + 15} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="14" fontWeight="bold">
-            {`${(percent * 100).toFixed(0)}%`}
-        </text>
-    </g>
-  );
-};
-
-
 export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
   const [isClient, setIsClient] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('');
@@ -82,9 +51,9 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
 
 
   return (
-    <div className="w-full h-80 flex items-center justify-center">
+    <div className="w-full h-96 flex items-center justify-center">
         <ResponsiveContainer width="100%" height="100%">
-            <PieChart width={400} height={400} margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
+            <PieChart width={400} height={400}>
                  <text
                     x="50%"
                     y="50%"
@@ -99,7 +68,6 @@ export function CategoryDonutChart({ data }: CategoryDonutChartProps) {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={<CustomLabel />}
                     innerRadius="60%"
                     outerRadius="80%"
                     paddingAngle={2}
