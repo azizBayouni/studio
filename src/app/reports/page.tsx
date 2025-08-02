@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -50,17 +49,31 @@ export default function ReportsPage() {
   useEffect(() => {
     setIsClient(true);
     setDefaultCurrency(getDefaultCurrency());
+    
+    // Initialize state from URL params
+    const walletsParam = searchParams.get('wallets');
+    if (walletsParam) {
+        setSelectedWallets(walletsParam.split(','));
+    }
+    
+    const timeRangeParam = searchParams.get('timeRange');
+    if (timeRangeParam) {
+        setTimeRange(timeRangeParam);
+    }
+    
+    const offsetParam = searchParams.get('offset');
+    if (offsetParam) {
+        setDateOffset(parseInt(offsetParam, 10));
+    }
 
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
-    if(fromParam && toParam) {
+    if(fromParam && toParam && timeRangeParam === 'custom') {
         try {
             const fromDate = parseISO(fromParam);
             const toDate = parseISO(toParam);
-            // Basic validation
             if (!isNaN(fromDate.getTime()) && !isNaN(toDate.getTime())) {
                 setCustomDateRange({ from: fromDate, to: toDate });
-                setTimeRange('custom');
             }
         } catch (e) {
             console.error("Invalid date in search params", e);
@@ -68,6 +81,46 @@ export default function ReportsPage() {
     }
 
   }, [searchParams]);
+  
+  useEffect(() => {
+    const updateUrlParams = () => {
+        const params = new URLSearchParams(searchParams);
+        
+        if (selectedWallets.length > 0) {
+            params.set('wallets', selectedWallets.join(','));
+        } else {
+            params.delete('wallets');
+        }
+
+        params.set('timeRange', timeRange);
+
+        if (dateOffset !== 0) {
+            params.set('offset', dateOffset.toString());
+        } else {
+            params.delete('offset');
+        }
+
+        if (timeRange === 'custom' && customDateRange?.from) {
+             params.set('from', customDateRange.from.toISOString());
+             if (customDateRange.to) {
+                params.set('to', customDateRange.to.toISOString());
+             } else {
+                params.delete('to');
+             }
+        } else {
+            params.delete('from');
+            params.delete('to');
+        }
+        
+        // Using replace to avoid adding to history stack for every filter change
+        router.replace(`/reports?${params.toString()}`);
+    };
+
+    if (isClient) {
+        updateUrlParams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedWallets, timeRange, customDateRange, dateOffset, isClient]);
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -95,7 +148,7 @@ export default function ReportsPage() {
         return customDateRange ? {
             from: customDateRange.from ? startOfDay(customDateRange.from) : undefined,
             to: customDateRange.to ? endOfDay(customDateRange.to) : undefined
-        } : undefined;
+        } : {from: undefined, to: undefined};
       case 'this-month':
       default:
          baseDate = addMonths(now, dateOffset);
@@ -204,35 +257,15 @@ export default function ReportsPage() {
   }, [reportableTransactions]);
   
   const handleTimeRangeChange = (value: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    if (value === 'custom') {
-        // Let the custom date picker handle the params
-    } else if (value === 'all') {
-        newParams.delete('from');
-        newParams.delete('to');
-    } else {
-        const now = new Date();
-        let from, to;
-        if (value === 'this-month') {
-            from = startOfMonth(now);
-            to = endOfMonth(now);
-        } else if (value === 'last-month') {
-            from = startOfMonth(subMonths(now, 1));
-            to = endOfMonth(subMonths(now, 1));
-        } else if (value === 'year') {
-            from = startOfYear(now);
-            to = endOfYear(now);
-        }
-        if (from && to) {
-            newParams.set('from', from.toISOString());
-            newParams.set('to', to.toISOString());
-        }
-    }
-    
-    router.push(`/reports?${newParams.toString()}`);
     setTimeRange(value);
-    setDateOffset(0); // Reset offset when range type changes
+    setDateOffset(0); 
   };
+  
+  const handleCustomDateChange = (newDateRange?: DateRange) => {
+     setCustomDateRange(newDateRange);
+     setTimeRange('custom');
+     setDateOffset(0);
+  }
 
   const getDateRangeLabel = () => {
     if (!dateRange || !dateRange.from) return 'All Time';
@@ -280,9 +313,7 @@ export default function ReportsPage() {
   }
 
   const buildCategoryLink = (categoryName: string) => {
-    const params = new URLSearchParams();
-    if (dateRange?.from) params.set('from', dateRange.from.toISOString());
-    if (dateRange?.to) params.set('to', dateRange.to.toISOString());
+    const params = new URLSearchParams(searchParams);
     return `/reports/${encodeURIComponent(categoryName)}?${params.toString()}`;
   }
 
@@ -431,8 +462,10 @@ export default function ReportsPage() {
       onOpenChange={setIsPickerOpen}
       value={timeRange}
       onChange={handleTimeRangeChange}
-      onCustomDateChange={setCustomDateRange}
+      onCustomDateChange={handleCustomDateChange}
     />
     </>
   );
 }
+
+    
