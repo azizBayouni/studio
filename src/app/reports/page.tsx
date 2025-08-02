@@ -443,8 +443,9 @@ export default function ReportsPage() {
                 </TabsContent>
                 <TabsContent value="chart">
                      {expenseByCategory.length > 0 ? (
-                        <div className="grid grid-cols-1 items-center">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                             <CategoryDonutChart data={expenseByCategory} />
+                            <CategoryExpenseList data={expenseByCategory} />
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center text-center p-8 text-muted-foreground">
@@ -467,5 +468,3 @@ export default function ReportsPage() {
     </>
   );
 }
-
-    
