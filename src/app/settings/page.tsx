@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -27,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 import { getUser, updateUser } from "@/services/user-service";
-import type { Transaction } from "@/lib/data";
+import type { Transaction, Category } from "@/lib/data";
 import * as XLSX from 'xlsx';
 import { useTheme } from "@/components/theme-provider";
 import { Switch } from "@/components/ui/switch";
@@ -36,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getTheme, setTheme as setAppTheme } from "@/services/theme-service";
 import { getDefaultWallet, setDefaultWallet } from "@/services/wallet-service";
 import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
+import { addCategory } from "@/services/category-service";
 
 
 export default function SettingsPage() {
@@ -46,6 +48,7 @@ export default function SettingsPage() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [importCategoriesFile, setImportCategoriesFile] = useState<File | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
@@ -137,6 +140,19 @@ export default function SettingsPage() {
     document.body.removeChild(link);
   };
 
+  const handleDownloadCategoryTemplate = () => {
+    const headers = "Category Name,Parent Category,Type";
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "category-import-template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExport = () => {
     // 1. Prepare Transaction Data
     const transactionData = allTransactions.map((t, index) => {
@@ -156,8 +172,9 @@ export default function SettingsPage() {
 
     // 2. Prepare Category Data
     const categoryData = allCategories.map(c => ({
-        'category': c.name,
-        'parent category': allCategories.find(p => p.id === c.parentId)?.name || '',
+        'Category Name': c.name,
+        'Parent Category': allCategories.find(p => p.id === c.parentId)?.name || '',
+        'Type': c.type,
     }));
 
     // 3. Create Worksheets
@@ -289,6 +306,78 @@ export default function SettingsPage() {
       }
     };
     reader.readAsText(importFile);
+  };
+  
+  const handleImportCategories = () => {
+    if (!importCategoriesFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a CSV file to import categories.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+
+      const rows = text.split('\n').slice(1);
+      let importedCount = 0;
+
+      try {
+        rows.forEach((row, index) => {
+          if (!row.trim()) return;
+          const [name, parentName, typeStr] = row.split(',').map(c => c.trim());
+          const rowNum = index + 2;
+
+          if (!name || !typeStr) {
+            throw new Error(`Row ${rowNum}: Missing category name or type.`);
+          }
+          
+          const type = typeStr.toLowerCase() as 'income' | 'expense';
+          if (type !== 'income' && type !== 'expense') {
+            throw new Error(`Row ${rowNum}: Invalid type '${typeStr}'. Must be 'income' or 'expense'.`);
+          }
+
+          let parentId: string | null = null;
+          if (parentName) {
+            const parentCategory = allCategories.find(c => c.name.toLowerCase() === parentName.toLowerCase());
+            if (!parentCategory) {
+              throw new Error(`Row ${rowNum}: Parent category '${parentName}' not found.`);
+            }
+            parentId = parentCategory.id;
+          }
+
+          addCategory({
+            name,
+            parentId,
+            type,
+            icon: '🤔' // Default icon
+          });
+          importedCount++;
+        });
+
+        toast({
+          title: 'Import Successful',
+          description: `${importedCount} categories have been imported.`,
+        });
+
+      } catch (error: any) {
+         toast({
+          title: 'Import Failed',
+          description: error.message || 'An unexpected error occurred during category import.',
+          variant: 'destructive',
+        });
+      } finally {
+        setImportCategoriesFile(null);
+        const fileInput = document.getElementById('import-categories-file') as HTMLInputElement;
+        if(fileInput) fileInput.value = '';
+        window.dispatchEvent(new Event('storage')); // Force refresh of other components
+      }
+    };
+    reader.readAsText(importCategoriesFile);
   };
 
   const handleBackup = () => {
@@ -503,9 +592,9 @@ export default function SettingsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Data Migration</CardTitle>
+              <CardTitle>Transaction Migration</CardTitle>
               <CardDescription>
-                Import from CSV, export to XLSX, or use a full JSON backup.
+                Import transactions from CSV or export main data to XLSX.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -521,7 +610,7 @@ export default function SettingsPage() {
                         </Button>
                     </div>
                     <div className="space-y-2">
-                        <h3 className="font-semibold">Export Data</h3>
+                        <h3 className="font-semibold">Export All Data</h3>
                         <p className="text-sm text-muted-foreground">
                             Export main data to a single .xlsx file.
                         </p>
@@ -542,6 +631,35 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+                <CardTitle>Category Migration</CardTitle>
+                <CardDescription>Import or export your category structure.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="p-4 border rounded-lg space-y-2">
+                    <h3 className="font-semibold">Import Categories</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Import categories from a CSV template. Export your data to see the format.
+                    </p>
+                     <Button variant="outline" onClick={handleDownloadCategoryTemplate} className="w-full sm:w-auto">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Template
+                    </Button>
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="import-categories-file">Upload Category CSV</Label>
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
+                        <Input id="import-categories-file" type="file" accept=".csv" className="w-full sm:max-w-xs" onChange={(e) => setImportCategoriesFile(e.target.files ? e.target.files[0] : null)} />
+                        <Button onClick={handleImportCategories} disabled={!importCategoriesFile}>
+                            <FileUp className="mr-2 h-4 w-4" /> Import Categories
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
 
           <Card>
             <CardHeader>
