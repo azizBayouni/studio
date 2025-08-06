@@ -14,10 +14,16 @@ import type { DateRange } from 'react-day-picker';
 import { 
   parseISO, isWithinInterval, endOfDay, startOfDay, 
   startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, 
-  subMonths, subYears, lightFormat, subQuarters, startOfQuarter, endOfQuarter, 
-  isSameDay, isSameWeek, isSameMonth, isSameQuarter, isSameYear,
-  addDays, addWeeks, addMonths, addQuarters, addYears,
+  subMonths,
   format,
+  isSameDay,
+  isSameWeek,
+  isSameMonth,
+  isSameYear,
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
   subDays
 } from 'date-fns';
 import { ArrowRight, CalendarIcon, HelpCircle, Globe, ChevronLeft, ChevronRight, BarChartHorizontalBig } from 'lucide-react';
@@ -31,7 +37,6 @@ import { CategoryDonutChart } from '@/components/category-donut-chart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
-import { getCategoryDepth } from '@/services/category-service';
 
 export function ReportsPageContent() {
   const [defaultCurrency, setDefaultCurrency] = useState('');
@@ -68,7 +73,7 @@ export function ReportsPageContent() {
 
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
-    if(fromParam && toParam && timeRangeParam === 'custom') {
+    if(fromParam && toParam) {
         try {
             const fromDate = parseISO(fromParam);
             const toDate = parseISO(toParam);
@@ -83,42 +88,37 @@ export function ReportsPageContent() {
   }, [searchParams]);
   
   useEffect(() => {
-    const updateUrlParams = () => {
-        const params = new URLSearchParams(searchParams);
-        
-        if (selectedWallets.length > 0) {
-            params.set('wallets', selectedWallets.join(','));
-        } else {
-            params.delete('wallets');
-        }
-
-        params.set('timeRange', timeRange);
-
-        if (dateOffset !== 0) {
-            params.set('offset', dateOffset.toString());
-        } else {
-            params.delete('offset');
-        }
-
-        if (timeRange === 'custom' && customDateRange?.from) {
-             params.set('from', customDateRange.from.toISOString());
-             if (customDateRange.to) {
-                params.set('to', customDateRange.to.toISOString());
-             } else {
-                params.delete('to');
-             }
-        } else {
-            params.delete('from');
-            params.delete('to');
-        }
-        
-        // Using replace to avoid adding to history stack for every filter change
-        router.replace(`/reports?${params.toString()}`);
-    };
-
-    if (isClient) {
-        updateUrlParams();
+    if (!isClient) return;
+    const params = new URLSearchParams(searchParams);
+    
+    if (selectedWallets.length > 0) {
+        params.set('wallets', selectedWallets.join(','));
+    } else {
+        params.delete('wallets');
     }
+
+    params.set('timeRange', timeRange);
+
+    if (dateOffset !== 0) {
+        params.set('offset', dateOffset.toString());
+    } else {
+        params.delete('offset');
+    }
+
+    if (timeRange === 'custom' && customDateRange?.from) {
+         params.set('from', customDateRange.from.toISOString());
+         if (customDateRange.to) {
+            params.set('to', customDateRange.to.toISOString());
+         } else {
+            params.delete('to');
+         }
+    } else {
+        params.delete('from');
+        params.delete('to');
+    }
+    
+    // Using replace to avoid adding to history stack for every filter change
+    router.replace(`/reports?${params.toString()}`);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWallets, timeRange, customDateRange, dateOffset, isClient]);
 
@@ -136,9 +136,6 @@ export function ReportsPageContent() {
       case 'last-month':
         const lastMonth = subMonths(now, 1);
         return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
-      case 'quarter':
-        baseDate = addQuarters(now, dateOffset);
-        return { from: startOfQuarter(baseDate), to: endOfQuarter(baseDate) };
       case 'year':
         baseDate = addYears(now, dateOffset);
         return { from: startOfYear(baseDate), to: endOfYear(baseDate) };
@@ -149,7 +146,7 @@ export function ReportsPageContent() {
             from: customDateRange.from ? startOfDay(customDateRange.from) : undefined,
             to: customDateRange.to ? endOfDay(customDateRange.to) : undefined
         } : {from: undefined, to: undefined};
-      case 'this-month':
+      case 'month':
       default:
          baseDate = addMonths(now, dateOffset);
         return { from: startOfMonth(baseDate), to: endOfMonth(baseDate) };
@@ -195,6 +192,7 @@ export function ReportsPageContent() {
 
 
   const formatCurrency = (amount: number) => {
+    if (!defaultCurrency) return '...';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: defaultCurrency,
@@ -215,7 +213,6 @@ export function ReportsPageContent() {
       .map(c => ({
         value: c.id,
         label: c.name,
-        depth: getCategoryDepth(c.id)
       }));
   }, []);
 
@@ -223,7 +220,6 @@ export function ReportsPageContent() {
     const expenses = reportableTransactions.filter(t => t.type === 'expense');
     
     const categoryMap = new Map(categories.map(c => [c.name, c]));
-    const parentMap = new Map(categories.map(c => [c.id, c.parentId]));
 
     const getTopLevelParent = (categoryName: string) => {
       let current = categoryMap.get(categoryName);
@@ -253,7 +249,7 @@ export function ReportsPageContent() {
       name,
       value: data.value,
       icon: data.icon,
-    })).sort((a,b) => b.value - a.value);
+    }));
   }, [reportableTransactions]);
   
   const handleTimeRangeChange = (value: string) => {
@@ -282,15 +278,9 @@ export function ReportsPageContent() {
         if (isSameWeek(now, from, { weekStartsOn: 1 })) return 'This Week';
         if (isSameWeek(subDays(now, 7), from, { weekStartsOn: 1 })) return 'Last Week';
     }
-    if (timeRange === 'this-month') {
+    if (timeRange === 'month') {
         if (isSameMonth(now, from)) return 'This Month';
-    }
-    if (timeRange === 'last-month') {
         if (isSameMonth(subMonths(now, 1), from)) return 'Last Month';
-    }
-     if (timeRange === 'quarter') {
-        if (isSameQuarter(now, from)) return 'This Quarter';
-        if (isSameQuarter(subQuarters(now, 1), from)) return 'Last Quarter';
     }
     if (timeRange === 'year') {
         if (isSameYear(now, from)) return 'This Year';
@@ -304,17 +294,12 @@ export function ReportsPageContent() {
   };
   
   const canNavigate = useMemo(() => {
-    return !['all', 'custom', 'last-month'].includes(timeRange);
+    return !['all', 'custom'].includes(timeRange);
   }, [timeRange]);
 
   const handleDateNavigation = (direction: 'next' | 'prev') => {
     const offset = direction === 'next' ? 1 : -1;
     setDateOffset(d => d + offset);
-  }
-
-  const buildCategoryLink = (categoryName: string) => {
-    const params = new URLSearchParams(searchParams);
-    return `/reports/${encodeURIComponent(categoryName)}?${params.toString()}`;
   }
 
 
@@ -423,7 +408,7 @@ export function ReportsPageContent() {
                     <TabsTrigger value="chart">Chart</TabsTrigger>
                 </TabsList>
                 <TabsContent value="breakdown" className="space-y-4">
-                     <Link href={buildCategoryLink('all-expense')}>
+                     <Link href={`/reports/all-expense?${searchParams.toString()}`}>
                         <Card className="p-4 hover:bg-muted/50">
                             <div className="flex justify-between items-start">
                                 <div>
@@ -441,9 +426,9 @@ export function ReportsPageContent() {
                     )}
                 </TabsContent>
                 <TabsContent value="chart">
-                     <ChartContainer config={{}} className="w-full h-80">
+                     <div className="w-full h-80 flex items-center justify-center">
                         {expenseByCategory.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center w-full">
                                 <CategoryDonutChart data={expenseByCategory} />
                                 <CategoryExpenseList data={expenseByCategory} />
                             </div>
@@ -453,7 +438,7 @@ export function ReportsPageContent() {
                                 <p>No expense data for this period.</p>
                             </div>
                         )}
-                    </ChartContainer>
+                    </div>
                 </TabsContent>
             </Tabs>
         </CardContent>
