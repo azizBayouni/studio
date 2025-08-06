@@ -194,6 +194,29 @@ export default function SettingsPage() {
         description: "Your data has been exported."
     });
   };
+  
+   const handleExportCategories = () => {
+    const categoryData = allCategories.map(c => ({
+      'Category Name': c.name,
+      'Parent Category': allCategories.find(p => p.id === c.parentId)?.name || '',
+      'Type': c.type,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(categoryData);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "categories-export.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "Categories Exported",
+      description: "Your categories have been exported to a CSV file.",
+    });
+  };
 
   const handleImport = () => {
     if (!importFile) {
@@ -638,16 +661,28 @@ export default function SettingsPage() {
                 <CardDescription>Import or export your category structure.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                 <div className="p-4 border rounded-lg space-y-2">
-                    <h3 className="font-semibold">Import Categories</h3>
-                    <p className="text-sm text-muted-foreground">
-                        Import categories from a CSV template. Export your data to see the format.
-                    </p>
-                     <Button variant="outline" onClick={handleDownloadCategoryTemplate} className="w-full sm:w-auto">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Template
-                    </Button>
-                </div>
+                <div className="p-4 border rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Import Categories</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Import categories from a CSV template.
+                        </p>
+                         <Button variant="outline" onClick={handleDownloadCategoryTemplate} className="w-full sm:w-auto">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Template
+                        </Button>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Export Categories</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Export your categories to a CSV file.
+                        </p>
+                        <Button variant="outline" onClick={handleExportCategories} className="w-full sm:w-auto">
+                            <UploadCloud className="mr-2 h-4 w-4" />
+                           Export to CSV
+                        </Button>
+                    </div>
+               </div>
                  <div className="space-y-2">
                     <Label htmlFor="import-categories-file">Upload Category CSV</Label>
                     <div className="flex flex-col sm:flex-row items-center gap-2">
