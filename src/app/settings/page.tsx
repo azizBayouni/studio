@@ -40,7 +40,6 @@ import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
 import { addCategory } from "@/services/category-service";
 import { DeleteAllCategoriesDialog } from "@/components/delete-all-categories-dialog";
 import { getExchangeRateApiKey, setExchangeRateApiKey } from "@/services/api-key-service";
-import { verifyApiKey } from "@/ai/flows/verify-api-key-flow";
 
 
 export default function SettingsPage() {
@@ -100,6 +99,15 @@ export default function SettingsPage() {
     const oldCurrency = currentDefaultCurrency;
     
     if (conversionType === 'convert') {
+      const apiKey = getExchangeRateApiKey();
+      if (!apiKey) {
+        toast({
+          title: "API Key Required",
+          description: "An ExchangeRate-API key is required for currency conversion. Please add one in the settings.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         toast({
           title: "Conversion in Progress",
@@ -540,25 +548,31 @@ export default function SettingsPage() {
   
   const handleApiKeySave = async () => {
     setIsVerifyingKey(true);
+    const url = `https://v6.exchangerate-api.com/v6/${exchangeRateKey}/latest/USD`;
+
     try {
-        const { isValid, error } = await verifyApiKey({ apiKey: exchangeRateKey });
-        if (isValid) {
-            setExchangeRateApiKey(exchangeRateKey);
-            toast({
-                title: 'API Key Verified & Saved',
-                description: 'Your ExchangeRate-API key is valid and has been saved.',
-            });
-        } else {
-             toast({
-                title: 'Invalid API Key',
-                description: error || 'The API key could not be verified. Please check it and try again.',
-                variant: 'destructive',
-            });
-        }
-    } catch (e) {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (response.ok && data.result === 'success') {
+        setExchangeRateApiKey(exchangeRateKey);
+        toast({
+            title: 'API Key Verified & Saved',
+            description: 'Your ExchangeRate-API key is valid and has been saved.',
+        });
+      } else {
+         const errorType = data['error-type'] || `HTTP status ${response.status}`;
+         toast({
+            title: 'Invalid API Key',
+            description: `Reason: ${errorType}. Please check the key and try again.`,
+            variant: 'destructive',
+        });
+      }
+    } catch (e: any) {
+        console.error("API Key verification fetch failed:", e);
         toast({
             title: 'Verification Failed',
-            description: 'Could not connect to the verification service. Please try again later.',
+            description: 'Could not connect to the verification service. Please check your network connection and try again.',
             variant: 'destructive',
         });
     } finally {
