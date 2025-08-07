@@ -9,8 +9,6 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER_ENV=true
-    env_file:
-      - .env
     networks:
       - expensewise-net
     restart: unless-stopped
