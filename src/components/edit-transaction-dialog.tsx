@@ -54,6 +54,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getCategoryDepth } from '@/services/category-service';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { getExchangeRateApiKey } from '@/services/api-key-service';
 
 interface EditTransactionDialogProps {
   isOpen: boolean;
@@ -92,12 +93,23 @@ export function EditTransactionDialog({
       setAmount(amountToConvert);
       return;
     }
+    const apiKey = getExchangeRateApiKey();
+    if (!apiKey) {
+      toast({
+        title: 'API Key Missing',
+        description: 'Please set your ExchangeRate-API key in the settings.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsConverting(true);
     try {
       const result = await autoCurrencyExchange({
         amount: amountToConvert,
         fromCurrency: from,
         toCurrency: to,
+        apiKey: apiKey
       });
       setAmount(result.convertedAmount);
       if (from !== to) {

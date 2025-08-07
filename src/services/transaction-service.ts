@@ -45,31 +45,16 @@ export function deleteAllTransactions(): void {
 }
 
 async function convertAmount(amount: number, fromCurrency: string, toCurrency: string) {
-    // We get the API key from localStorage here on the client before calling the server-side flow
     const apiKey = getExchangeRateApiKey();
     if (!apiKey) {
       throw new Error("ExchangeRate API Key not found. Please set it in the settings.");
     }
     
-    // The flow itself will run on the server, but since this service is client-side,
-    // the API key won't be available there. We need to pass it.
-    // Let's reconsider the design. The flow should be able to get the key.
-    // The easiest way is to modify the flow itself to not need the key from its parameters,
-    // but this is not possible as localStorage is client-side.
-    // So the `autoCurrencyExchange` flow must receive the key.
-    // The tool `getExchangeRate` already expects it.
-    // The flow `autoCurrencyExchangeFlow` should call the tool with the key.
-    // But how does the flow get the key?
-    // Let's stick with the plan: the client-side service reads the key and passes it.
-    // This requires updating the flow schema.
-
-    // Let's adjust the `autoCurrencyExchange` input schema in the flow file.
-    // For now, let's assume the flow can get the key, which was the last change.
-
     const { convertedAmount } = await autoCurrencyExchange({
         amount: amount,
         fromCurrency: fromCurrency,
         toCurrency: toCurrency,
+        apiKey: apiKey,
     });
     return convertedAmount;
 }
