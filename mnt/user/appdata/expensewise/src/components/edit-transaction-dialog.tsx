@@ -92,7 +92,16 @@ export function EditTransactionDialog({
       setAmount(amountToConvert);
       return;
     }
-
+    const apiKey = getExchangeRateApiKey();
+    if (!apiKey) {
+      toast({
+        title: 'API Key Missing',
+        description: 'An ExchangeRate-API key is required for conversion. Please add one in the settings.',
+        variant: 'destructive',
+      });
+      setAmount(amountToConvert);
+      return;
+    }
     setIsConverting(true);
     try {
       const converted = await convertAmountService(amountToConvert, from, to);

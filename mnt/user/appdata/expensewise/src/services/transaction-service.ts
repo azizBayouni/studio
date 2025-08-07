@@ -94,9 +94,10 @@ export async function convertAmount(amount: number, fromCurrency: string, toCurr
 
 
 export async function convertAllTransactions(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const transaction of transactions) {
         if (transaction.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(transaction.amount, fromCurrency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: transaction.amount, exchangeRate });
             transaction.amount = convertedAmount;
             transaction.currency = toCurrency;
         }
@@ -104,9 +105,10 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
 }
 
 export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const wallet of wallets) {
         if (wallet.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(wallet.balance, wallet.currency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: wallet.balance, exchangeRate });
             wallet.balance = convertedAmount;
             wallet.currency = toCurrency;
         }
@@ -114,9 +116,10 @@ export async function convertAllWallets(fromCurrency: string, toCurrency: string
 }
 
 export async function convertAllDebts(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const debt of debts) {
         if (debt.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(debt.amount, fromCurrency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: debt.amount, exchangeRate });
             debt.amount = convertedAmount;
             debt.currency = toCurrency;
         }
