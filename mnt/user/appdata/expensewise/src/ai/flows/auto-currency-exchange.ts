@@ -59,7 +59,9 @@ const getExchangeRate = ai.defineTool(
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.error(`API request failed with status: ${response.status}`);
+        console.error(`API request failed with status: ${response.status} ${response.statusText}`);
+        const responseBody = await response.text();
+        console.error('API Response Body:', responseBody);
         // Fallback to a simulated rate on API error
         return 1.05;
       }
@@ -89,7 +91,7 @@ const getExchangeRate = ai.defineTool(
       return 1.05; // Final fallback
 
     } catch (error) {
-      console.error("Failed to fetch exchange rate:", error);
+      console.error("Failed to fetch exchange rate. Full error:", error);
       // Fallback to a simulated rate on network or other errors
       return 1.05;
     }
