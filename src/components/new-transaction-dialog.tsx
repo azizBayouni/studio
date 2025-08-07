@@ -33,10 +33,9 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { categories, wallets, currencies, events, type Category } from '@/lib/data';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { addTransaction } from '@/services/transaction-service';
+import { addTransaction, convertAmount as convertAmountService } from '@/services/transaction-service';
 import { useToast } from "@/hooks/use-toast"
 import type { Transaction } from '@/lib/data';
-import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 import { getDefaultCurrency } from '@/services/settings-service';
 import { getTravelMode } from '@/services/travel-mode-service';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -85,32 +84,27 @@ export function NewTransactionDialog({
     if (!apiKey) {
       toast({
         title: 'API Key Missing',
-        description: 'Please set your ExchangeRate-API key in the settings.',
+        description: 'An ExchangeRate-API key is required for conversion. Please add one in the settings.',
         variant: 'destructive',
       });
+      setAmount(amountToConvert);
       return;
     }
-
     setIsConverting(true);
     try {
-      const result = await autoCurrencyExchange({
-        amount: amountToConvert,
-        fromCurrency: from,
-        toCurrency: to,
-        apiKey: apiKey
-      });
-      setAmount(result.convertedAmount);
+      const converted = await convertAmountService(amountToConvert, from, to);
+      setAmount(converted);
        if (from !== to) {
         toast({
             title: 'Amount Converted',
-            description: `${amountToConvert.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${from} is ≈ ${result.convertedAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${to}.`,
+            description: `${amountToConvert.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${from} is ≈ ${converted.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${to}.`,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Currency conversion failed:', error);
       toast({
         title: 'Conversion Failed',
-        description: 'Could not convert currency. Please try again.',
+        description: error.message || 'Could not convert currency. Please try again.',
         variant: 'destructive',
       });
        setAmount(amountToConvert); // Fallback to original amount on error
