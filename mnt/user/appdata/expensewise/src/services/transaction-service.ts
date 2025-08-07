@@ -1,7 +1,6 @@
 
 
 import { transactions, wallets, debts, type Transaction, type Wallet, type Debt } from '@/lib/data';
-import { autoCurrencyExchange } from '@/ai/flows/auto-currency-exchange';
 import { getExchangeRateApiKey } from './api-key-service';
 
 export function addTransaction(newTransaction: Omit<Transaction, 'id'>): void {
@@ -82,14 +81,8 @@ export async function convertAmount(amount: number, fromCurrency: string, toCurr
     if (fromCurrency === toCurrency) {
         return amount;
     }
-
     const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
-    
-    const { convertedAmount } = await autoCurrencyExchange({
-        amount: amount,
-        exchangeRate: exchangeRate,
-    });
-    return convertedAmount;
+    return amount * exchangeRate;
 }
 
 
@@ -97,8 +90,7 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
     const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const transaction of transactions) {
         if (transaction.currency === fromCurrency) {
-            const { convertedAmount } = await autoCurrencyExchange({ amount: transaction.amount, exchangeRate });
-            transaction.amount = convertedAmount;
+            transaction.amount = transaction.amount * exchangeRate;
             transaction.currency = toCurrency;
         }
     }
@@ -108,8 +100,7 @@ export async function convertAllWallets(fromCurrency: string, toCurrency: string
     const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const wallet of wallets) {
         if (wallet.currency === fromCurrency) {
-            const { convertedAmount } = await autoCurrencyExchange({ amount: wallet.balance, exchangeRate });
-            wallet.balance = convertedAmount;
+            wallet.balance = wallet.balance * exchangeRate;
             wallet.currency = toCurrency;
         }
     }
@@ -119,8 +110,7 @@ export async function convertAllDebts(fromCurrency: string, toCurrency: string):
     const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const debt of debts) {
         if (debt.currency === fromCurrency) {
-            const { convertedAmount } = await autoCurrencyExchange({ amount: debt.amount, exchangeRate });
-            debt.amount = convertedAmount;
+            debt.amount = debt.amount * exchangeRate;
             debt.currency = toCurrency;
         }
     }
