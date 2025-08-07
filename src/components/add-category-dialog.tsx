@@ -27,7 +27,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { emojiIcons, type Category } from '@/lib/data';
+import { emojiIcons, type Category, type EmojiIcon } from '@/lib/data';
 import { addCategory, getCategoryDepth } from '@/services/category-service';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast"
@@ -130,7 +130,9 @@ export function AddCategoryDialog({
 
   const filteredIcons = useMemo(() => {
     if (!iconSearch) return emojiIcons;
-    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+    return emojiIcons.filter(emoji => 
+        emoji.name.toLowerCase().includes(iconSearch.toLowerCase())
+    );
   }, [iconSearch]);
 
 
@@ -167,15 +169,15 @@ export function AddCategoryDialog({
                         <div className="grid grid-cols-5 gap-2 p-2">
                         {filteredIcons.map((emoji, index) => (
                             <Button
-                            key={`${emoji}-${index}`}
+                            key={`${emoji.icon}-${index}`}
                             variant="ghost"
                             className="text-lg p-2"
                             onClick={() => {
-                                setIcon(emoji);
+                                setIcon(emoji.icon);
                                 setIsPopoverOpen(false);
                             }}
                             >
-                            {emoji}
+                            {emoji.icon}
                             </Button>
                         ))}
                         </div>

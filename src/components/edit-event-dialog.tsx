@@ -73,7 +73,9 @@ export function EditEventDialog({
 
   const filteredIcons = useMemo(() => {
     if (!iconSearch) return emojiIcons;
-    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+    return emojiIcons.filter(emoji => 
+        emoji.name.toLowerCase().includes(iconSearch.toLowerCase())
+    );
   }, [iconSearch]);
   
   if (!event) return null;
@@ -111,15 +113,15 @@ export function EditEventDialog({
                       <div className="grid grid-cols-5 gap-2 p-2">
                         {filteredIcons.map((emoji, index) => (
                           <Button
-                            key={`${emoji}-${index}`}
+                            key={`${emoji.icon}-${index}`}
                             variant="ghost"
                             className="text-lg p-2"
                             onClick={() => {
-                              setIcon(emoji);
+                              setIcon(emoji.icon);
                               setIsPopoverOpen(false);
                             }}
                           >
-                            {emoji}
+                            {emoji.icon}
                           </Button>
                         ))}
                       </div>
