@@ -57,10 +57,10 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string): Promis
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            console.error(`API request failed with status: ${response.status}`);
-            const responseBody = await response.text();
-            console.error('API Response Body:', responseBody);
-            throw new Error(`API request failed: ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            const errorType = errorData['error-type'] || `HTTP status ${response.status}`;
+            console.error(`API request failed with status: ${response.status}`, errorData);
+            throw new Error(`API request failed: ${errorType}`);
         }
         const data = await response.json();
         if (data.result === 'error') {
@@ -78,7 +78,7 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string): Promis
     }
 }
 
-export async function convertAmount(amount: number, fromCurrency: string, toCurrency: string) {
+export async function convertAmount(amount: number, fromCurrency: string, toCurrency: string): Promise<number> {
     if (fromCurrency === toCurrency) {
         return amount;
     }
@@ -95,7 +95,6 @@ export async function convertAmount(amount: number, fromCurrency: string, toCurr
 
 export async function convertAllTransactions(fromCurrency: string, toCurrency: string): Promise<void> {
     for (const transaction of transactions) {
-        // We only convert transactions that are in the `fromCurrency`
         if (transaction.currency === fromCurrency) {
             const convertedAmount = await convertAmount(transaction.amount, fromCurrency, toCurrency);
             transaction.amount = convertedAmount;
@@ -106,7 +105,6 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
 
 export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
     for (const wallet of wallets) {
-        // Only convert wallets that match the OLD default currency
         if (wallet.currency === fromCurrency) {
             const convertedAmount = await convertAmount(wallet.balance, wallet.currency, toCurrency);
             wallet.balance = convertedAmount;
