@@ -38,6 +38,7 @@ import { getTheme, setTheme as setAppTheme } from "@/services/theme-service";
 import { getDefaultWallet, setDefaultWallet } from "@/services/wallet-service";
 import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
 import { addCategory } from "@/services/category-service";
+import { DeleteAllCategoriesDialog } from "@/components/delete-all-categories-dialog";
 
 
 export default function SettingsPage() {
@@ -46,7 +47,8 @@ export default function SettingsPage() {
   const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [isDeleteAllTransactionsDialogOpen, setIsDeleteAllTransactionsDialogOpen] = useState(false);
+  const [isDeleteAllCategoriesDialogOpen, setIsDeleteAllCategoriesDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importCategoriesFile, setImportCategoriesFile] = useState<File | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
@@ -734,10 +736,14 @@ export default function SettingsPage() {
               <CardTitle>Danger Zone</CardTitle>
               <CardDescription>These actions are irreversible. Please be certain.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Button variant="destructive" onClick={() => setIsDeleteAllDialogOpen(true)}>
+            <CardContent className="flex flex-col sm:flex-row gap-2">
+                <Button variant="destructive" onClick={() => setIsDeleteAllTransactionsDialogOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete All Transactions
+                </Button>
+                <Button variant="destructive" onClick={() => setIsDeleteAllCategoriesDialogOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete All Categories
                 </Button>
             </CardContent>
           </Card>
@@ -752,8 +758,12 @@ export default function SettingsPage() {
         onConfirm={handleConfirmation}
       />
        <DeleteAllTransactionsDialog
-        isOpen={isDeleteAllDialogOpen}
-        onOpenChange={setIsDeleteAllDialogOpen}
+        isOpen={isDeleteAllTransactionsDialogOpen}
+        onOpenChange={setIsDeleteAllTransactionsDialogOpen}
+      />
+      <DeleteAllCategoriesDialog
+        isOpen={isDeleteAllCategoriesDialogOpen}
+        onOpenChange={setIsDeleteAllCategoriesDialogOpen}
       />
     </>
   )

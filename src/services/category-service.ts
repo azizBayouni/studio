@@ -78,3 +78,14 @@ export function deleteCategory(categoryId: string): void {
     allCategories.length = 0;
     allCategories.push(...updatedCategories);
 }
+
+export function deleteAllCategories(): void {
+    const hasTransactions = transactions.length > 0;
+    if (hasTransactions) {
+        throw new Error("Cannot delete categories because transactions exist. Please delete all transactions first.");
+    }
+
+    // Clear the categories array
+    allCategories.length = 0;
+    window.dispatchEvent(new Event('storage')); // Notify other parts of the app
+}
