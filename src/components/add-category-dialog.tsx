@@ -130,7 +130,6 @@ export function AddCategoryDialog({
 
   const filteredIcons = useMemo(() => {
     if (!iconSearch) return emojiIcons;
-    // A simple search: check if emoji name (if available in a real scenario) or the emoji itself contains the search string
     return emojiIcons.filter(emoji => emoji.includes(iconSearch));
   }, [iconSearch]);
 
