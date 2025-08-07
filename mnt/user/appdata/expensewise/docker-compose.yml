@@ -5,6 +5,8 @@ services:
     container_name: expensewise-app
     ports:
       - "9002:9002"
+    dns:
+      - 8.8.8.8
     depends_on:
       - firebase-emulators
     environment:
