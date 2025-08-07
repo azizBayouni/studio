@@ -10,9 +10,6 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER_ENV=true
-    networks:
-      - default # Add this line to connect to the default bridge network
-      - expensewise-net
     restart: unless-stopped
 
   firebase-emulators:
@@ -32,10 +29,4 @@ services:
       - "8085:8085" # Pub/Sub Emulator
     volumes:
       - ./firebase-data:/emulator-data
-    networks:
-      - expensewise-net
     restart: unless-stopped
-
-networks:
-  expensewise-net:
-    driver: bridge
