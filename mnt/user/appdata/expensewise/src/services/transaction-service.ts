@@ -44,17 +44,50 @@ export function deleteAllTransactions(): void {
     window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
-async function convertAmount(amount: number, fromCurrency: string, toCurrency: string) {
+async function getExchangeRate(fromCurrency: string, toCurrency: string): Promise<number> {
     const apiKey = getExchangeRateApiKey();
     if (!apiKey) {
       throw new Error("ExchangeRate API Key not found. Please set it in the settings.");
     }
+    if (fromCurrency === toCurrency) {
+      return 1;
+    }
+
+    const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${fromCurrency}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error(`API request failed with status: ${response.status}`);
+            const responseBody = await response.text();
+            console.error('API Response Body:', responseBody);
+            throw new Error(`API request failed: ${response.statusText}`);
+        }
+        const data = await response.json();
+        if (data.result === 'error') {
+            console.error(`ExchangeRate API error: ${data['error-type']}`);
+            throw new Error(`ExchangeRate API error: ${data['error-type']}`);
+        }
+        const rate = data.conversion_rates?.[toCurrency];
+        if (!rate) {
+            throw new Error(`Could not find rate for ${toCurrency}`);
+        }
+        return rate;
+    } catch(error) {
+        console.error("Failed to fetch exchange rate. Full error:", error);
+        throw error;
+    }
+}
+
+export async function convertAmount(amount: number, fromCurrency: string, toCurrency: string) {
+    if (fromCurrency === toCurrency) {
+        return amount;
+    }
+
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     
     const { convertedAmount } = await autoCurrencyExchange({
         amount: amount,
-        fromCurrency: fromCurrency,
-        toCurrency: toCurrency,
-        apiKey: apiKey,
+        exchangeRate: exchangeRate,
     });
     return convertedAmount;
 }
