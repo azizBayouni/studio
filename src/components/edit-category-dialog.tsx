@@ -52,6 +52,7 @@ export function EditCategoryDialog({
   const [parentId, setParentId] = useState<string | null>(null);
   const [icon, setIcon] = useState<string | undefined>(undefined);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
   const { toast } = useToast()
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export function EditCategoryDialog({
       setParentId(category.parentId);
       setIcon(category.icon);
     }
+    setIconSearch('');
   }, [category, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -143,6 +145,12 @@ export function EditCategoryDialog({
     });
   };
 
+  const filteredIcons = useMemo(() => {
+    if (!iconSearch) return emojiIcons;
+    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+  }, [iconSearch]);
+
+
   if (!isOpen || !category) return null;
 
   return (
@@ -166,9 +174,17 @@ export function EditCategoryDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
+                    <div className="p-2">
+                       <Input 
+                          placeholder="Search icons..."
+                          value={iconSearch}
+                          onChange={(e) => setIconSearch(e.target.value)}
+                          className="w-full"
+                        />
+                    </div>
                     <ScrollArea className="h-48">
                         <div className="grid grid-cols-5 gap-2 p-2">
-                        {emojiIcons.map((emoji) => (
+                        {filteredIcons.map((emoji) => (
                             <Button
                             key={emoji}
                             variant="ghost"

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -21,8 +22,9 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { emojiIcons, type Event } from '@/lib/data';
 import { updateEvent } from '@/services/event-service';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast"
+import { ScrollArea } from './ui/scroll-area';
 
 interface EditEventDialogProps {
   isOpen: boolean;
@@ -39,6 +41,7 @@ export function EditEventDialog({
   const [icon, setIcon] = useState('🎉');
   const [status, setStatus] = useState<'active' | 'inactive'>('active');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
   const { toast } = useToast()
 
   useEffect(() => {
@@ -47,7 +50,8 @@ export function EditEventDialog({
       setIcon(event.icon);
       setStatus(event.status);
     }
-  }, [event]);
+    setIconSearch('');
+  }, [event, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +70,11 @@ export function EditEventDialog({
       onOpenChange(false);
     }
   };
+
+  const filteredIcons = useMemo(() => {
+    if (!iconSearch) return emojiIcons;
+    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+  }, [iconSearch]);
   
   if (!event) return null;
 
@@ -89,22 +98,32 @@ export function EditEventDialog({
                       {icon}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2">
-                    <div className="grid grid-cols-5 gap-2">
-                      {emojiIcons.map((emoji) => (
-                        <Button
-                          key={emoji}
-                          variant="ghost"
-                          className="text-lg p-2"
-                          onClick={() => {
-                            setIcon(emoji);
-                            setIsPopoverOpen(false);
-                          }}
-                        >
-                          {emoji}
-                        </Button>
-                      ))}
+                  <PopoverContent className="w-auto p-0">
+                    <div className="p-2">
+                       <Input 
+                          placeholder="Search icons..."
+                          value={iconSearch}
+                          onChange={(e) => setIconSearch(e.target.value)}
+                          className="w-full"
+                        />
                     </div>
+                    <ScrollArea className="h-48">
+                      <div className="grid grid-cols-5 gap-2 p-2">
+                        {filteredIcons.map((emoji) => (
+                          <Button
+                            key={emoji}
+                            variant="ghost"
+                            className="text-lg p-2"
+                            onClick={() => {
+                              setIcon(emoji);
+                              setIsPopoverOpen(false);
+                            }}
+                          >
+                            {emoji}
+                          </Button>
+                        ))}
+                      </div>
+                    </ScrollArea>
                   </PopoverContent>
                 </Popover>
               </div>

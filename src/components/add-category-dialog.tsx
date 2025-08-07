@@ -50,6 +50,7 @@ export function AddCategoryDialog({
   const [parentId, setParentId] = useState<string | null>(null);
   const [icon, setIcon] = useState<string>('🤔');
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function AddCategoryDialog({
         setType('expense');
         setParentId(null);
         setIcon('🤔');
+        setIconSearch('');
     }
   }, [isOpen]);
 
@@ -126,6 +128,12 @@ export function AddCategoryDialog({
     });
   };
 
+  const filteredIcons = useMemo(() => {
+    if (!iconSearch) return emojiIcons;
+    // A simple search: check if emoji name (if available in a real scenario) or the emoji itself contains the search string
+    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+  }, [iconSearch]);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -148,9 +156,17 @@ export function AddCategoryDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
+                    <div className="p-2">
+                       <Input 
+                          placeholder="Search icons..."
+                          value={iconSearch}
+                          onChange={(e) => setIconSearch(e.target.value)}
+                          className="w-full"
+                        />
+                    </div>
                     <ScrollArea className="h-48">
                         <div className="grid grid-cols-5 gap-2 p-2">
-                        {emojiIcons.map((emoji) => (
+                        {filteredIcons.map((emoji) => (
                             <Button
                             key={emoji}
                             variant="ghost"

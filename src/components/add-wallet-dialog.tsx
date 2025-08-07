@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { emojiIcons, currencies } from '@/lib/data';
 import { addWallet } from '@/services/wallet-service';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { getDefaultCurrency } from '@/services/settings-service';
 import { ScrollArea } from './ui/scroll-area';
@@ -46,6 +46,7 @@ export function AddWalletDialog({
   const [icon, setIcon] = useState('🏦');
   const [currency, setCurrency] = useState(getDefaultCurrency());
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [iconSearch, setIconSearch] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function AddWalletDialog({
       setName('');
       setIcon('🏦');
       setCurrency(getDefaultCurrency());
+      setIconSearch('');
     }
   }, [isOpen]);
 
@@ -72,6 +74,11 @@ export function AddWalletDialog({
       onOpenChange(false);
     }
   };
+
+  const filteredIcons = useMemo(() => {
+    if (!iconSearch) return emojiIcons;
+    return emojiIcons.filter(emoji => emoji.includes(iconSearch));
+  }, [iconSearch]);
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -94,9 +101,17 @@ export function AddWalletDialog({
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
+                    <div className="p-2">
+                       <Input 
+                          placeholder="Search icons..."
+                          value={iconSearch}
+                          onChange={(e) => setIconSearch(e.target.value)}
+                          className="w-full"
+                        />
+                    </div>
                     <ScrollArea className="h-48">
                         <div className="grid grid-cols-5 gap-2 p-2">
-                        {emojiIcons.map((emoji) => (
+                        {filteredIcons.map((emoji) => (
                             <Button
                             key={emoji}
                             variant="ghost"
