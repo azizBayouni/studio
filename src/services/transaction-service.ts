@@ -57,8 +57,10 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string): Promis
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            console.error(`API request failed with status: ${response.status}`);
-            throw new Error(`API request failed with status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({}));
+            const errorType = errorData['error-type'] || `HTTP status ${response.status}`;
+            console.error(`API request failed with status: ${response.status}`, errorData);
+            throw new Error(`API request failed: ${errorType}`);
         }
         const data = await response.json();
         if (data.result === 'error') {
@@ -76,13 +78,11 @@ async function getExchangeRate(fromCurrency: string, toCurrency: string): Promis
     }
 }
 
-async function convertAmount(amount: number, fromCurrency: string, toCurrency: string) {
+export async function convertAmount(amount: number, fromCurrency: string, toCurrency: string): Promise<number> {
     if (fromCurrency === toCurrency) {
         return amount;
     }
-
     const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
-    
     const { convertedAmount } = await autoCurrencyExchange({
         amount: amount,
         exchangeRate: exchangeRate,
@@ -92,10 +92,10 @@ async function convertAmount(amount: number, fromCurrency: string, toCurrency: s
 
 
 export async function convertAllTransactions(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const transaction of transactions) {
-        // We only convert transactions that are in the `fromCurrency`
         if (transaction.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(transaction.amount, fromCurrency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: transaction.amount, exchangeRate });
             transaction.amount = convertedAmount;
             transaction.currency = toCurrency;
         }
@@ -103,10 +103,10 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
 }
 
 export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const wallet of wallets) {
-        // Only convert wallets that match the OLD default currency
         if (wallet.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(wallet.balance, wallet.currency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: wallet.balance, exchangeRate });
             wallet.balance = convertedAmount;
             wallet.currency = toCurrency;
         }
@@ -114,9 +114,10 @@ export async function convertAllWallets(fromCurrency: string, toCurrency: string
 }
 
 export async function convertAllDebts(fromCurrency: string, toCurrency: string): Promise<void> {
+    const exchangeRate = await getExchangeRate(fromCurrency, toCurrency);
     for (const debt of debts) {
         if (debt.currency === fromCurrency) {
-            const convertedAmount = await convertAmount(debt.amount, fromCurrency, toCurrency);
+            const { convertedAmount } = await autoCurrencyExchange({ amount: debt.amount, exchangeRate });
             debt.amount = convertedAmount;
             debt.currency = toCurrency;
         }
