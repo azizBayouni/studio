@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents, debts as allDebts, user as currentUserObject } from "@/lib/data"
-import { FileUp, Download, UploadCloud, Moon, Sun, Trash2, HardDriveDownload, HardDriveUpload } from "lucide-react"
+import { FileUp, Download, UploadCloud, Moon, Sun, Trash2, HardDriveDownload, HardDriveUpload, KeyRound } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
@@ -39,6 +39,7 @@ import { getDefaultWallet, setDefaultWallet } from "@/services/wallet-service";
 import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
 import { addCategory } from "@/services/category-service";
 import { DeleteAllCategoriesDialog } from "@/components/delete-all-categories-dialog";
+import { getExchangeRateApiKey, setExchangeRateApiKey } from "@/services/api-key-service";
 
 
 export default function SettingsPage() {
@@ -53,6 +54,7 @@ export default function SettingsPage() {
   const [importCategoriesFile, setImportCategoriesFile] = useState<File | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [exchangeRateKey, setExchangeRateKey] = useState('');
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   
@@ -66,6 +68,8 @@ export default function SettingsPage() {
     const currentUser = getUser();
     setName(currentUser.name);
     setEmail(currentUser.email);
+
+    setExchangeRateKey(getExchangeRateApiKey() || '');
   }, []);
 
   const handleProfileSave = () => {
@@ -531,6 +535,14 @@ export default function SettingsPage() {
     };
     reader.readAsText(restoreFile);
   };
+  
+  const handleApiKeySave = () => {
+    setExchangeRateApiKey(exchangeRateKey);
+    toast({
+        title: 'API Key Saved',
+        description: 'Your ExchangeRate-API key has been updated.',
+    });
+  };
 
 
   return (
@@ -612,6 +624,34 @@ export default function SettingsPage() {
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
               <Button onClick={handleCurrencySaveClick}>Save</Button>
+            </CardFooter>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+                <CardTitle>API Integrations</CardTitle>
+                <CardDescription>Manage API keys for third-party services.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="exchangerate-api-key" className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        ExchangeRate-API Key
+                    </Label>
+                    <Input 
+                        id="exchangerate-api-key" 
+                        type="password"
+                        value={exchangeRateKey} 
+                        onChange={(e) => setExchangeRateKey(e.target.value)} 
+                        placeholder="Enter your API key"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Required for automatic currency conversion in Travel Mode. Get a free key from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer" className="underline">exchangerate-api.com</a>.
+                    </p>
+                </div>
+            </CardContent>
+             <CardFooter className="border-t px-6 py-4">
+              <Button onClick={handleApiKeySave}>Save API Key</Button>
             </CardFooter>
           </Card>
 
