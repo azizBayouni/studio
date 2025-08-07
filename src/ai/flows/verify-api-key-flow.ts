@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import axios from 'axios';
 
 const VerifyApiKeyInputSchema = z.object({
   apiKey: z.string().describe('The ExchangeRate-API key to verify.'),
@@ -40,8 +42,8 @@ const verifyApiKeyFlow = ai.defineFlow(
     const url = `https://v6.exchangerate-api.com/v6/${input.apiKey}/latest/USD`;
 
     try {
-      const response = await fetch(url);
-      const data = await response.json();
+      const response = await axios.get(url);
+      const data = response.data;
 
       if (data.result === 'success') {
         return { isValid: true };
