@@ -166,9 +166,9 @@ export function AddCategoryDialog({
                     </div>
                     <ScrollArea className="h-48">
                         <div className="grid grid-cols-5 gap-2 p-2">
-                        {filteredIcons.map((emoji) => (
+                        {filteredIcons.map((emoji, index) => (
                             <Button
-                            key={emoji}
+                            key={`${emoji}-${index}`}
                             variant="ghost"
                             className="text-lg p-2"
                             onClick={() => {
