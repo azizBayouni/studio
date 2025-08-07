@@ -40,6 +40,7 @@ import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
 import { addCategory } from "@/services/category-service";
 import { DeleteAllCategoriesDialog } from "@/components/delete-all-categories-dialog";
 import { getExchangeRateApiKey, setExchangeRateApiKey } from "@/services/api-key-service";
+import { verifyApiKey } from "@/ai/flows/verify-api-key-flow";
 
 
 export default function SettingsPage() {
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [exchangeRateKey, setExchangeRateKey] = useState('');
+  const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   
@@ -110,11 +112,11 @@ export default function SettingsPage() {
           title: "Conversion Successful",
           description: `All financial data has been converted to ${selectedCurrency}.`,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Conversion failed:", error);
         toast({
           title: "Conversion Failed",
-          description: "Could not convert all data. Please try again.",
+          description: error.message || "Could not convert all data. Please try again.",
           variant: "destructive",
         });
         return; 
@@ -536,12 +538,32 @@ export default function SettingsPage() {
     reader.readAsText(restoreFile);
   };
   
-  const handleApiKeySave = () => {
-    setExchangeRateApiKey(exchangeRateKey);
-    toast({
-        title: 'API Key Saved',
-        description: 'Your ExchangeRate-API key has been updated.',
-    });
+  const handleApiKeySave = async () => {
+    setIsVerifyingKey(true);
+    try {
+        const { isValid, error } = await verifyApiKey({ apiKey: exchangeRateKey });
+        if (isValid) {
+            setExchangeRateApiKey(exchangeRateKey);
+            toast({
+                title: 'API Key Verified & Saved',
+                description: 'Your ExchangeRate-API key is valid and has been saved.',
+            });
+        } else {
+             toast({
+                title: 'Invalid API Key',
+                description: error || 'The API key could not be verified. Please check it and try again.',
+                variant: 'destructive',
+            });
+        }
+    } catch (e) {
+        toast({
+            title: 'Verification Failed',
+            description: 'Could not connect to the verification service. Please try again later.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsVerifyingKey(false);
+    }
   };
 
 
@@ -651,7 +673,9 @@ export default function SettingsPage() {
                 </div>
             </CardContent>
              <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleApiKeySave}>Save API Key</Button>
+              <Button onClick={handleApiKeySave} disabled={isVerifyingKey}>
+                {isVerifyingKey ? 'Verifying...' : 'Save & Verify API Key'}
+              </Button>
             </CardFooter>
           </Card>
 
