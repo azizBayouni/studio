@@ -11,7 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import axios from 'axios';
 
 const AutoCurrencyExchangeInputSchema = z.object({
   amount: z.number().describe('The amount to convert.'),
@@ -58,8 +57,14 @@ const getExchangeRate = ai.defineTool(
     const url = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${input.fromCurrency}`;
 
     try {
-      const response = await axios.get(url);
-      const data = response.data;
+      const response = await fetch(url);
+      if (!response.ok) {
+        console.error(`API request failed with status: ${response.status}`);
+        // Fallback to a simulated rate on API error
+        return 1.05;
+      }
+
+      const data = await response.json();
       
       if (data.result === 'error') {
         console.error(`ExchangeRate API error: ${data['error-type']}`);
@@ -74,8 +79,9 @@ const getExchangeRate = ai.defineTool(
         console.warn(`Rate for ${input.toCurrency} not found. Falling back.`);
         // Fallback for currencies not in the main list
         const inverseUrl = `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${input.toCurrency}`;
-        const inverseResponse = await axios.get(inverseUrl);
-        const inverseData = inverseResponse.data;
+        const inverseResponse = await fetch(inverseUrl);
+         if (!inverseResponse.ok) return 1.05;
+        const inverseData = await inverseResponse.json();
         const inverseRate = inverseData.conversion_rates?.[input.fromCurrency];
         if (inverseRate) return 1 / inverseRate;
       }

@@ -11,7 +11,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import axios from 'axios';
 
 const VerifyApiKeyInputSchema = z.object({
   apiKey: z.string().describe('The ExchangeRate-API key to verify.'),
@@ -42,8 +41,8 @@ const verifyApiKeyFlow = ai.defineFlow(
     const url = `https://v6.exchangerate-api.com/v6/${input.apiKey}/latest/USD`;
 
     try {
-      const response = await axios.get(url);
-      const data = response.data;
+      const response = await fetch(url);
+      const data = await response.json();
 
       if (data.result === 'success') {
         return { isValid: true };
@@ -55,7 +54,7 @@ const verifyApiKeyFlow = ai.defineFlow(
       }
     } catch (error) {
       console.error('Failed to verify API key:', error);
-      return { isValid: false, error: 'Failed to connect to the exchange rate service.' };
+      return { isValid: false, error: 'Could not connect to the verification service.' };
     }
   }
 );
