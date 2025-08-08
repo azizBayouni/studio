@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -20,19 +21,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents } from "@/lib/data"
-import { FileUp, Download, UploadCloud, Moon, Sun, Trash2 } from "lucide-react"
+import { currencies, transactions as allTransactions, categories as allCategories, wallets as allWallets, events as allEvents, debts as allDebts, user as currentUserObject } from "@/lib/data"
+import { FileUp, Download, UploadCloud, Moon, Sun, Trash2, HardDriveDownload, HardDriveUpload, KeyRound } from "lucide-react"
 import { getDefaultCurrency, setDefaultCurrency } from "@/services/settings-service";
 import { useToast } from "@/hooks/use-toast";
 import { convertAllTransactions, convertAllWallets, convertAllDebts, addTransactions } from "@/services/transaction-service";
 import { ConfirmCurrencyChangeDialog } from "@/components/confirm-currency-change-dialog";
 import { getUser, updateUser } from "@/services/user-service";
-import type { Transaction } from "@/lib/data";
+import type { Transaction, Category } from "@/lib/data";
 import * as XLSX from 'xlsx';
 import { useTheme } from "@/components/theme-provider";
 import { Switch } from "@/components/ui/switch";
 import { DeleteAllTransactionsDialog } from "@/components/delete-all-transactions-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getTheme, setTheme as setAppTheme } from "@/services/theme-service";
+import { getDefaultWallet, setDefaultWallet } from "@/services/wallet-service";
+import { getTravelMode, setTravelMode } from "@/services/travel-mode-service";
+import { addCategory } from "@/services/category-service";
+import { DeleteAllCategoriesDialog } from "@/components/delete-all-categories-dialog";
+import { getExchangeRateApiKey, setExchangeRateApiKey } from "@/services/api-key-service";
 
 
 export default function SettingsPage() {
@@ -41,9 +48,14 @@ export default function SettingsPage() {
   const [currentDefaultCurrency, setCurrentDefaultCurrency] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('');
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [isDeleteAllDialogOpen, setIsDeleteAllDialogOpen] = useState(false);
+  const [isDeleteAllTransactionsDialogOpen, setIsDeleteAllTransactionsDialogOpen] = useState(false);
+  const [isDeleteAllCategoriesDialogOpen, setIsDeleteAllCategoriesDialogOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
+  const [importCategoriesFile, setImportCategoriesFile] = useState<File | null>(null);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [exchangeRateKey, setExchangeRateKey] = useState('');
+  const [isVerifyingKey, setIsVerifyingKey] = useState(false);
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   
@@ -57,6 +69,8 @@ export default function SettingsPage() {
     const currentUser = getUser();
     setName(currentUser.name);
     setEmail(currentUser.email);
+
+    setExchangeRateKey(getExchangeRateApiKey() || '');
   }, []);
 
   const handleProfileSave = () => {
@@ -85,6 +99,15 @@ export default function SettingsPage() {
     const oldCurrency = currentDefaultCurrency;
     
     if (conversionType === 'convert') {
+      const apiKey = getExchangeRateApiKey();
+      if (!apiKey) {
+        toast({
+          title: "API Key Required",
+          description: "An ExchangeRate-API key is required for currency conversion. Please add one in the settings.",
+          variant: "destructive",
+        });
+        return;
+      }
       try {
         toast({
           title: "Conversion in Progress",
@@ -97,11 +120,11 @@ export default function SettingsPage() {
           title: "Conversion Successful",
           description: `All financial data has been converted to ${selectedCurrency}.`,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Conversion failed:", error);
         toast({
           title: "Conversion Failed",
-          description: "Could not convert all data. Please try again.",
+          description: error.message || "Could not convert all data. Please try again.",
           variant: "destructive",
         });
         return; 
@@ -133,6 +156,19 @@ export default function SettingsPage() {
     document.body.removeChild(link);
   };
 
+  const handleDownloadCategoryTemplate = () => {
+    const headers = "Category Name,Parent Category,Type";
+    const blob = new Blob([headers], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "category-import-template.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleExport = () => {
     // 1. Prepare Transaction Data
     const transactionData = allTransactions.map((t, index) => {
@@ -146,14 +182,15 @@ export default function SettingsPage() {
             'Currency': t.currency,
             'Date': t.date,
             'Event': eventName,
-            'Exclude Report': t.excludeFromReport ? 'Yes' : '',
+            'Exclude Report': t.excludeFromReport ? 'true' : 'false',
         };
     });
 
     // 2. Prepare Category Data
     const categoryData = allCategories.map(c => ({
-        'category': c.name,
-        'parent category': allCategories.find(p => p.id === c.parentId)?.name || '',
+        'Category Name': c.name,
+        'Parent Category': allCategories.find(p => p.id === c.parentId)?.name || '',
+        'Type': c.type,
     }));
 
     // 3. Create Worksheets
@@ -171,6 +208,29 @@ export default function SettingsPage() {
     toast({
         title: "Export Successful",
         description: "Your data has been exported."
+    });
+  };
+  
+   const handleExportCategories = () => {
+    const categoryData = allCategories.map(c => ({
+      'Category Name': c.name,
+      'Parent Category': allCategories.find(p => p.id === c.parentId)?.name || '',
+      'Type': c.type,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(categoryData);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "categories-export.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({
+      title: "Categories Exported",
+      description: "Your categories have been exported to a CSV file.",
     });
   };
 
@@ -258,7 +318,7 @@ export default function SettingsPage() {
             currency: currency || getDefaultCurrency(),
             date: dateValue.toISOString().split('T')[0],
             eventId: eventObj?.id,
-            excludeFromReport: !!excludeReport,
+            excludeFromReport: excludeReport?.toLowerCase() === 'true',
           };
           newTransactions.push(newTransaction);
         });
@@ -286,6 +346,240 @@ export default function SettingsPage() {
     };
     reader.readAsText(importFile);
   };
+  
+  const handleImportCategories = () => {
+    if (!importCategoriesFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a CSV file to import categories.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+
+      const rows = text.split('\n').slice(1);
+      let importedCount = 0;
+
+      try {
+        rows.forEach((row, index) => {
+          if (!row.trim()) return;
+          const [name, parentName, typeStr] = row.split(',').map(c => c.trim());
+          const rowNum = index + 2;
+
+          if (!name || !typeStr) {
+            throw new Error(`Row ${rowNum}: Missing category name or type.`);
+          }
+          
+          const type = typeStr.toLowerCase() as 'income' | 'expense';
+          if (type !== 'income' && type !== 'expense') {
+            throw new Error(`Row ${rowNum}: Invalid type '${typeStr}'. Must be 'income' or 'expense'.`);
+          }
+
+          let parentId: string | null = null;
+          if (parentName) {
+            const parentCategory = allCategories.find(c => c.name.toLowerCase() === parentName.toLowerCase());
+            if (!parentCategory) {
+              throw new Error(`Row ${rowNum}: Parent category '${parentName}' not found.`);
+            }
+            parentId = parentCategory.id;
+          }
+
+          addCategory({
+            name,
+            parentId,
+            type,
+            icon: '🤔' // Default icon
+          });
+          importedCount++;
+        });
+
+        toast({
+          title: 'Import Successful',
+          description: `${importedCount} categories have been imported.`,
+        });
+
+      } catch (error: any) {
+         toast({
+          title: 'Import Failed',
+          description: error.message || 'An unexpected error occurred during category import.',
+          variant: 'destructive',
+        });
+      } finally {
+        setImportCategoriesFile(null);
+        const fileInput = document.getElementById('import-categories-file') as HTMLInputElement;
+        if(fileInput) fileInput.value = '';
+        window.dispatchEvent(new Event('storage')); // Force refresh of other components
+      }
+    };
+    reader.readAsText(importCategoriesFile);
+  };
+
+  const handleBackup = () => {
+    try {
+      const settings = {
+        defaultCurrency: getDefaultCurrency(),
+        theme: getTheme(),
+        defaultWallet: getDefaultWallet(),
+        travelMode: getTravelMode(),
+      };
+
+      // We need to handle files in transactions. For simplicity, we'll store file names
+      // and accept that restoring won't restore file contents, just their names.
+      const serializableTransactions = allTransactions.map(t => ({
+          ...t,
+          attachments: t.attachments?.map(f => f.name) ?? [],
+      }));
+
+      const backupData = {
+        transactions: serializableTransactions,
+        categories: allCategories,
+        wallets: allWallets,
+        debts: allDebts,
+        events: allEvents,
+        user: currentUserObject,
+        settings: settings,
+      };
+
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `expensewise-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Backup Successful",
+        description: "All your data has been downloaded."
+      });
+
+    } catch (error) {
+      console.error("Backup failed:", error);
+      toast({
+        title: "Backup Failed",
+        description: "Could not create backup file. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleRestore = () => {
+    if (!restoreFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a JSON backup file to restore.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const text = e.target?.result as string;
+            if (!text) throw new Error("File is empty.");
+            
+            const data = JSON.parse(text);
+
+            // --- VALIDATION (simple checks) ---
+            if (!data.transactions || !data.categories || !data.wallets || !data.settings) {
+                throw new Error("Invalid or corrupted backup file.");
+            }
+
+            // --- RESTORE DATA ---
+            // Clear existing data
+            allTransactions.length = 0;
+            allCategories.length = 0;
+            allWallets.length = 0;
+            allDebts.length = 0;
+            allEvents.length = 0;
+
+            // Push new data
+            // Note: transaction attachments are just names, not actual files.
+             data.transactions.forEach((t: any) => allTransactions.push({...t, attachments: []}));
+            data.categories.forEach((c: any) => allCategories.push(c));
+            data.wallets.forEach((w: any) => allWallets.push(w));
+            if (data.debts) data.debts.forEach((d: any) => allDebts.push(d));
+            if (data.events) data.events.forEach((ev: any) => allEvents.push(ev));
+            
+            // --- RESTORE SETTINGS ---
+            if (data.settings.defaultCurrency) setDefaultCurrency(data.settings.defaultCurrency);
+            if (data.settings.theme) setAppTheme(data.settings.theme);
+            if (data.settings.defaultWallet) setDefaultWallet(data.settings.defaultWallet);
+            if (data.settings.travelMode && data.settings.travelMode.isActive) {
+                setTravelMode(data.settings.travelMode);
+            }
+
+            // --- RESTORE USER ---
+            if (data.user) {
+                updateUser(data.user);
+            }
+
+            toast({
+                title: "Restore Successful",
+                description: "Your data has been restored. The page will now reload."
+            });
+            
+            // Reload the page to apply all changes
+            setTimeout(() => window.location.reload(), 2000);
+
+        } catch (error: any) {
+            console.error("Restore failed:", error);
+            toast({
+                title: 'Restore Failed',
+                description: error.message || 'An unexpected error occurred during restore.',
+                variant: 'destructive',
+            });
+        } finally {
+            setRestoreFile(null);
+            const fileInput = document.getElementById('restore-file') as HTMLInputElement;
+            if(fileInput) fileInput.value = '';
+        }
+    };
+    reader.readAsText(restoreFile);
+  };
+  
+  const handleApiKeySave = async () => {
+    setIsVerifyingKey(true);
+    const url = `https://v6.exchangerate-api.com/v6/${exchangeRateKey}/latest/USD`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (response.ok && data.result === 'success') {
+        setExchangeRateApiKey(exchangeRateKey);
+        toast({
+            title: 'API Key Verified & Saved',
+            description: 'Your ExchangeRate-API key is valid and has been saved.',
+        });
+      } else {
+         const errorType = data['error-type'] || `HTTP status ${response.status}`;
+         toast({
+            title: 'Invalid API Key',
+            description: `Reason: ${errorType}. Please check the key and try again.`,
+            variant: 'destructive',
+        });
+      }
+    } catch (e: any) {
+        console.error("API Key verification fetch failed:", e);
+        toast({
+            title: 'Verification Failed',
+            description: 'Could not connect to the verification service. Please check your network connection and try again.',
+            variant: 'destructive',
+        });
+    } finally {
+        setIsVerifyingKey(false);
+    }
+  };
+
 
   return (
     <>
@@ -368,60 +662,164 @@ export default function SettingsPage() {
               <Button onClick={handleCurrencySaveClick}>Save</Button>
             </CardFooter>
           </Card>
+          
+          <Card>
+            <CardHeader>
+                <CardTitle>API Integrations</CardTitle>
+                <CardDescription>Manage API keys for third-party services.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-2">
+                    <Label htmlFor="exchangerate-api-key" className="flex items-center gap-2">
+                        <KeyRound className="h-4 w-4" />
+                        ExchangeRate-API Key
+                    </Label>
+                    <Input 
+                        id="exchangerate-api-key" 
+                        type="password"
+                        value={exchangeRateKey} 
+                        onChange={(e) => setExchangeRateKey(e.target.value)} 
+                        placeholder="Enter your API key"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Required for automatic currency conversion. Get a free key from <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener noreferrer" className="underline">exchangerate-api.com</a>.
+                    </p>
+                </div>
+            </CardContent>
+             <CardFooter className="border-t px-6 py-4">
+              <Button onClick={handleApiKeySave} disabled={isVerifyingKey}>
+                {isVerifyingKey ? 'Verifying...' : 'Save & Verify API Key'}
+              </Button>
+            </CardFooter>
+          </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Bulk Import / Export</CardTitle>
+              <CardTitle>Transaction Migration</CardTitle>
               <CardDescription>
-                Migrate your data or download a backup.
+                Import transactions from CSV or export main data to XLSX.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-               <div className="p-4 border rounded-lg flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 space-y-2">
-                        <h3 className="font-semibold">Import Data</h3>
+               <div className="p-4 border rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Import Transactions</h3>
                         <p className="text-sm text-muted-foreground">
                             Import transactions from a CSV template.
                         </p>
-                         <Button variant="outline" onClick={handleDownloadTemplate} className="w-full sm:w-auto">
+                         <Button variant="outline" onClick={handleDownloadTemplate} className="w-full">
                             <Download className="mr-2 h-4 w-4" />
                             Download Template
                         </Button>
                     </div>
-                    <div className="flex-1 space-y-2 mt-4 sm:mt-0">
-                        <h3 className="font-semibold">Export Data</h3>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Export All Data</h3>
                         <p className="text-sm text-muted-foreground">
-                            Export data to a single .xlsx file.
+                            Export main data to a single .xlsx file.
                         </p>
-                        <Button variant="outline" onClick={handleExport} className="w-full sm:w-auto">
+                        <Button variant="outline" onClick={handleExport} className="w-full">
                             <UploadCloud className="mr-2 h-4 w-4" />
-                           Export All Data
+                           Export to XLSX
                         </Button>
                     </div>
                </div>
-              <div className="space-y-2">
+               <div className="space-y-2">
                 <Label htmlFor="import-file">Upload CSV File for Import</Label>
-                <div className="flex flex-col sm:flex-row items-center gap-2">
-                  <Input id="import-file" type="file" accept=".csv" className="w-full sm:max-w-xs" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
+                <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                  <Input id="import-file" type="file" accept=".csv" className="flex-1" onChange={(e) => setImportFile(e.target.files ? e.target.files[0] : null)} />
+                   <Button onClick={handleImport} disabled={!importFile} className="w-full sm:w-auto">
+                     <FileUp className="mr-2 h-4 w-4" /> Import
+                  </Button>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-              <Button onClick={handleImport}>
-                <FileUp className="mr-2 h-4 w-4" /> Upload and Import
-              </Button>
-            </CardFooter>
           </Card>
+
+          <Card>
+            <CardHeader>
+                <CardTitle>Category Migration</CardTitle>
+                <CardDescription>Import or export your category structure.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="p-4 border rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Import Categories</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Import categories from a CSV template.
+                        </p>
+                         <Button variant="outline" onClick={handleDownloadCategoryTemplate} className="w-full">
+                            <Download className="mr-2 h-4 w-4" />
+                            Download Template
+                        </Button>
+                    </div>
+                    <div className="space-y-2">
+                        <h3 className="font-semibold">Export Categories</h3>
+                        <p className="text-sm text-muted-foreground">
+                            Export your categories to a CSV file.
+                        </p>
+                        <Button variant="outline" onClick={handleExportCategories} className="w-full">
+                            <UploadCloud className="mr-2 h-4 w-4" />
+                           Export to CSV
+                        </Button>
+                    </div>
+               </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="import-categories-file">Upload Category CSV</Label>
+                    <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                        <Input id="import-categories-file" type="file" accept=".csv" className="flex-1" onChange={(e) => setImportCategoriesFile(e.target.files ? e.target.files[0] : null)} />
+                        <Button onClick={handleImportCategories} disabled={!importCategoriesFile} className="w-full sm:w-auto">
+                            <FileUp className="mr-2 h-4 w-4" /> Import
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+          </Card>
+
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup & Restore</CardTitle>
+              <CardDescription>
+                Save or load a complete snapshot of all application data.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                  <div className="space-y-2">
+                      <h3 className="font-semibold">Backup</h3>
+                      <p className="text-sm text-muted-foreground">Download a single JSON file containing all your data and settings.</p>
+                      <Button variant="default" onClick={handleBackup} className="w-full sm:w-auto">
+                          <HardDriveDownload className="mr-2 h-4 w-4" />
+                          Backup All Data
+                      </Button>
+                  </div>
+              </div>
+               <div className="space-y-2">
+                <Label htmlFor="restore-file">Upload JSON for Restore</Label>
+                <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                  <Input id="restore-file" type="file" accept=".json" className="flex-1" onChange={(e) => setRestoreFile(e.target.files ? e.target.files[0] : null)} />
+                   <Button onClick={handleRestore} disabled={!restoreFile} className="w-full sm:w-auto">
+                    <HardDriveUpload className="mr-2 h-4 w-4" /> Restore
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
 
            <Card className="border-destructive">
             <CardHeader>
               <CardTitle>Danger Zone</CardTitle>
               <CardDescription>These actions are irreversible. Please be certain.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Button variant="destructive" onClick={() => setIsDeleteAllDialogOpen(true)}>
+            <CardContent className="flex flex-col sm:flex-row gap-2">
+                <Button variant="destructive" className="w-full sm:w-auto" onClick={() => setIsDeleteAllTransactionsDialogOpen(true)}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete All Transactions
+                </Button>
+                <Button variant="destructive" className="w-full sm:w-auto" onClick={() => setIsDeleteAllCategoriesDialogOpen(true)}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete All Categories
                 </Button>
             </CardContent>
           </Card>
@@ -436,8 +834,12 @@ export default function SettingsPage() {
         onConfirm={handleConfirmation}
       />
        <DeleteAllTransactionsDialog
-        isOpen={isDeleteAllDialogOpen}
-        onOpenChange={setIsDeleteAllDialogOpen}
+        isOpen={isDeleteAllTransactionsDialogOpen}
+        onOpenChange={setIsDeleteAllTransactionsDialogOpen}
+      />
+      <DeleteAllCategoriesDialog
+        isOpen={isDeleteAllCategoriesDialogOpen}
+        onOpenChange={setIsDeleteAllCategoriesDialogOpen}
       />
     </>
   )
