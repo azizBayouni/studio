@@ -36,6 +36,7 @@ import { EditWalletDialog } from '@/components/edit-wallet-dialog';
 import { AddWalletDialog } from '@/components/add-wallet-dialog';
 import { deleteWallet, getDefaultWallet, setDefaultWallet } from '@/services/wallet-service';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 
 export default function WalletsPage() {
@@ -45,6 +46,7 @@ export default function WalletsPage() {
   const [defaultWalletId, setDefaultWalletId] = useState<string | null>(null);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
   
   useEffect(() => {
     const refreshWallets = () => {
@@ -73,12 +75,14 @@ export default function WalletsPage() {
 
   }, []);
 
-  const handleEditClick = (wallet: Wallet) => {
+  const handleEditClick = (e: React.MouseEvent, wallet: Wallet) => {
+    e.stopPropagation();
     setSelectedWallet(wallet);
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (walletId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, walletId: string) => {
+    e.stopPropagation();
     deleteWallet(walletId);
     toast({
         title: "Wallet Deleted",
@@ -87,7 +91,8 @@ export default function WalletsPage() {
     })
   };
 
-  const handleSetDefault = (walletId: string) => {
+  const handleSetDefault = (e: React.MouseEvent, walletId: string) => {
+    e.stopPropagation();
     setDefaultWallet(walletId);
     setDefaultWalletId(walletId);
     toast({
@@ -95,6 +100,12 @@ export default function WalletsPage() {
       description: "This wallet will be pre-selected for new transactions.",
     });
   };
+
+  const handleWalletClick = (walletName: string) => {
+    const params = new URLSearchParams();
+    params.set('wallets', walletName);
+    router.push(`/reports?${params.toString()}`);
+  }
 
   return (
     <>
@@ -114,7 +125,7 @@ export default function WalletsPage() {
         </div>
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {wallets.map((wallet) => (
-              <Card key={wallet.id}>
+              <Card key={wallet.id} className="cursor-pointer hover:bg-muted/50 transition-colors" onClick={() => handleWalletClick(wallet.name)}>
                  <AlertDialog>
                     <DropdownMenu>
                         <CardHeader className="flex flex-row items-start justify-between space-y-0">
@@ -128,23 +139,23 @@ export default function WalletsPage() {
                                 </div>
                             </div>
                             
-                                <DropdownMenuTrigger asChild>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                                     <Button variant="ghost" size="icon" className="h-8 w-8">
                                         <MoreVertical className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                     <DropdownMenuItem onClick={() => handleSetDefault(wallet.id)} disabled={defaultWalletId === wallet.id}>
+                                     <DropdownMenuItem onClick={(e) => handleSetDefault(e, wallet.id)} disabled={defaultWalletId === wallet.id}>
                                         <CheckCircle className="mr-2 h-4 w-4" />
                                         {defaultWalletId === wallet.id ? 'Default Wallet' : 'Set as Default'}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleEditClick(wallet)}>
+                                    <DropdownMenuItem onClick={(e) => handleEditClick(e, wallet)}>
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive">
+                                        <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -168,7 +179,7 @@ export default function WalletsPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDeleteClick(wallet.id)}>Continue</AlertDialogAction>
+                        <AlertDialogAction onClick={(e) => handleDeleteClick(e, wallet.id)}>Continue</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
