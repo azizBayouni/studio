@@ -10,6 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
   SidebarContent,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -25,6 +26,7 @@ import {
 
 export function MainNav() {
   const pathname = usePathname();
+  const { setOpenMobile } = useSidebar();
   
   const menuItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +37,10 @@ export function MainNav() {
     { href: '/wallets', label: 'Wallets', icon: Wallet },
     { href: '/events', label: 'Events', icon: CalendarDays },
   ];
+  
+  const handleLinkClick = () => {
+    setOpenMobile(false);
+  };
   
   return (
     <>
@@ -57,7 +63,7 @@ export function MainNav() {
                 isActive={pathname === item.href}
                 tooltip={item.label}
               >
-                <Link href={item.href}>
+                <Link href={item.href} onClick={handleLinkClick}>
                   <item.icon />
                   <span>{item.label}</span>
                 </Link>
@@ -74,7 +80,7 @@ export function MainNav() {
               isActive={pathname === '/settings'}
               tooltip="Settings"
             >
-              <Link href="/settings">
+              <Link href="/settings" onClick={handleLinkClick}>
                 <Settings />
                 <span>Settings</span>
               </Link>
