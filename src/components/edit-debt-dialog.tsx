@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -160,15 +161,14 @@ export function EditDebtDialog({
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Edit Debt</DialogTitle>
-            <DialogDescription>
-              Update details or add payments for this debt.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+      <DialogContent className="max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>Edit Debt</DialogTitle>
+          <DialogDescription>
+            Update details or add payments for this debt.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto pr-4 -mr-4 space-y-4">
             <div className="space-y-2">
               <Label>Remaining Balance</Label>
               <p className="text-2xl font-bold">{formatCurrency(remainingAmount)}</p>
@@ -291,8 +291,8 @@ export function EditDebtDialog({
                 </div>
               </RadioGroup>
             </div>
-          </div>
-          <DialogFooter className="sm:justify-between pt-4 border-t">
+        </div>
+        <DialogFooter className="sm:justify-between pt-4 border-t flex-shrink-0">
             <AlertDialog>
                 <AlertDialogTrigger asChild>
                     <Button type="button" variant="destructive">
@@ -316,14 +316,13 @@ export function EditDebtDialog({
             </AlertDialog>
             <div className="flex gap-2">
                 <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" onClick={handleSubmit}>
                     Cancel
                 </Button>
                 </DialogClose>
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit" onClick={handleSubmit}>Save Changes</Button>
             </div>
-          </DialogFooter>
-        </form>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

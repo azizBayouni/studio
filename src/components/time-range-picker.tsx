@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -65,10 +66,13 @@ export function TimeRangePicker({
 
   const Content = () => (
     <>
-      <DrawerHeader className="text-left">
+      <DrawerHeader className="text-left sm:hidden">
           <DrawerTitle>Select time range</DrawerTitle>
       </DrawerHeader>
-      <div className="p-4 pt-0">
+       <SheetHeader className="text-left hidden sm:block">
+          <SheetTitle>Select time range</SheetTitle>
+      </SheetHeader>
+      <div className="p-4 pt-0 sm:pt-4">
         <div className="flex flex-col gap-2">
           {timeRanges.map((range) => (
             <Button
@@ -89,11 +93,19 @@ export function TimeRangePicker({
 
   return (
     <>
-      <Drawer open={isOpen} onOpenChange={onOpenChange}>
-          <DrawerContent>
+      {isMobile ? (
+        <Drawer open={isOpen} onOpenChange={onOpenChange}>
+            <DrawerContent>
+              <Content />
+            </DrawerContent>
+        </Drawer>
+      ) : (
+        <Sheet open={isOpen} onOpenChange={onOpenChange}>
+          <SheetContent>
             <Content />
-          </DrawerContent>
-      </Drawer>
+          </SheetContent>
+        </Sheet>
+      )}
       <CustomRangeDialog
         isOpen={isCustomDialogOpen}
         onOpenChange={setIsCustomDialogOpen}

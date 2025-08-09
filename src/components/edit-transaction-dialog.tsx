@@ -375,15 +375,14 @@ export function EditTransactionDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
-            <DialogHeader>
-            <DialogTitle>Edit Transaction</DialogTitle>
-            <DialogDescription>
-                Update the details of your transaction.
-            </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+      <DialogContent className="max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>Edit Transaction</DialogTitle>
+          <DialogDescription>
+              Update the details of your transaction.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto -mr-4 pr-4 space-y-4">
             {isTravelMode && (
               <Alert>
                 <AlertTitle>Travel Mode Active</AlertTitle>
@@ -481,7 +480,7 @@ export function EditTransactionDialog({
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
                         <Command>
                         <CommandInput placeholder="Search category..." />
                         <CommandList>
@@ -571,41 +570,40 @@ export function EditTransactionDialog({
                     <Checkbox id="edit-exclude-report" checked={excludeFromReport} onCheckedChange={(checked) => setExcludeFromReport(Boolean(checked))} />
                     <Label htmlFor="edit-exclude-report">Exclude from report</Label>
                 </div>
-            </div>
-            <DialogFooter className="sm:justify-between">
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button type="button" variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete this
-                            transaction from our servers.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
-                <div className="flex gap-2">
-                    <DialogClose asChild>
-                        <Button type="button" variant="secondary">
-                        Cancel
-                        </Button>
-                    </DialogClose>
-                    <Button type="submit" disabled={isConverting}>
-                        {isConverting ? 'Converting...' : 'Save Changes'}
+        </div>
+        <DialogFooter className="sm:justify-between flex-shrink-0 pt-4 border-t">
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button type="button" variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
                     </Button>
-                </div>
-            </DialogFooter>
-        </form>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this
+                        transaction from our servers.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+            <div className="flex gap-2">
+                <DialogClose asChild>
+                    <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                    Cancel
+                    </Button>
+                </DialogClose>
+                <Button type="submit" disabled={isConverting} onClick={handleSubmit}>
+                    {isConverting ? 'Converting...' : 'Save Changes'}
+                </Button>
+            </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

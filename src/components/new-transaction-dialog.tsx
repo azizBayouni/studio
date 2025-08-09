@@ -338,15 +338,15 @@ export function NewTransactionDialog({
   
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit}>
-            <DialogHeader>
-            <DialogTitle>New Transaction</DialogTitle>
-            <DialogDescription>
-                Add a new income or expense record.
-            </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
+      <DialogContent className="max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>New Transaction</DialogTitle>
+          <DialogDescription>
+              Add a new income or expense record.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pr-4 -mr-4">
+            <div className="space-y-4">
              {isTravelMode && (
               <Alert>
                 <AlertTitle>Travel Mode Active</AlertTitle>
@@ -503,17 +503,20 @@ export function NewTransactionDialog({
                     <Label htmlFor="exclude-report">Exclude from report</Label>
                 </div>
             </div>
-            <DialogFooter>
+          </form>
+          <DialogFooter className="flex-shrink-0">
             <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" onClick={(e) => {
+                  e.preventDefault();
+                  onOpenChange(false)
+                }}>
                 Cancel
                 </Button>
             </DialogClose>
-            <Button type="submit" disabled={isConverting}>
+            <Button type="submit" disabled={isConverting} onClick={handleSubmit}>
                 {isConverting ? 'Converting...' : 'Save Transaction'}
             </Button>
-            </DialogFooter>
-        </form>
+          </DialogFooter>
       </DialogContent>
     </Dialog>
   );

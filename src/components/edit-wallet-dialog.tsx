@@ -102,15 +102,15 @@ export function EditWalletDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col">
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Edit Wallet</DialogTitle>
             <DialogDescription>
               Update the details and linked categories for your wallet.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
+          <div className="space-y-4 py-4 flex-1 overflow-y-auto pr-4 -mr-4">
             <div className="flex items-end gap-4">
               <div className="space-y-2">
                 <Label htmlFor="icon">Icon</Label>
@@ -183,7 +183,7 @@ export function EditWalletDialog({
                 </p>
             </div>
           </div>
-          <DialogFooter className="border-t pt-4">
+          <DialogFooter className="border-t pt-4 flex-shrink-0">
             <DialogClose asChild>
               <Button type="button" variant="secondary">
                 Cancel
