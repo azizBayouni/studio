@@ -182,6 +182,7 @@ export default function TransactionsPage() {
                   <TableHead>Description</TableHead>
                   <TableHead className="hidden md:table-cell">Category</TableHead>
                   <TableHead className="hidden lg:table-cell">Wallet</TableHead>
+                  <TableHead className="hidden lg:table-cell">Event</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -206,6 +207,7 @@ export default function TransactionsPage() {
                       <Badge variant="outline">{transaction.category}</Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">{transaction.wallet}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{getEventName(transaction.eventId)}</TableCell>
                     <TableCell className={`text-right font-medium ${transaction.type === 'income' ? 'text-accent' : ''}`}>
                       {transaction.type === 'income' ? '+' : ''}{formatCurrency(transaction.amount, transaction.currency)}
                     </TableCell>
