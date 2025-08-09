@@ -1,11 +1,13 @@
 
 
-import { transactions, wallets, debts, type Transaction, type Wallet, type Debt } from '@/lib/data';
+
+import { transactions, wallets, debts, type Transaction, type Wallet, type Debt, saveTransactions, saveWallets, saveDebts } from '@/lib/data';
 import { getExchangeRateApiKey } from './api-key-service';
 
 export function addTransaction(newTransaction: Omit<Transaction, 'id'>): void {
     const newId = 't' + (Math.max(0, ...transactions.map(t => parseInt(t.id.substring(1)))) + 1).toString();
     transactions.unshift({ ...newTransaction, id: newId });
+    saveTransactions();
     window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
@@ -15,6 +17,7 @@ export function addTransactions(newTransactions: Omit<Transaction, 'id'>[]): voi
         return { ...t, id: newId };
     });
     transactions.unshift(...newItems);
+    saveTransactions();
     window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
@@ -22,6 +25,7 @@ export function updateTransaction(updatedTransaction: Transaction): void {
     const index = transactions.findIndex(t => t.id === updatedTransaction.id);
     if (index !== -1) {
         transactions[index] = updatedTransaction;
+        saveTransactions();
         window.dispatchEvent(new Event('transactionsUpdated'));
     } else {
         console.error(`Transaction with id ${updatedTransaction.id} not found.`);
@@ -32,6 +36,7 @@ export function deleteTransaction(transactionId: string): void {
     const index = transactions.findIndex(t => t.id === transactionId);
     if (index !== -1) {
         transactions.splice(index, 1);
+        saveTransactions();
         window.dispatchEvent(new Event('transactionsUpdated'));
     } else {
         console.error(`Transaction with id ${transactionId} not found.`);
@@ -40,6 +45,7 @@ export function deleteTransaction(transactionId: string): void {
 
 export function deleteAllTransactions(): void {
     transactions.length = 0;
+    saveTransactions();
     window.dispatchEvent(new Event('transactionsUpdated'));
 }
 
@@ -94,6 +100,7 @@ export async function convertAllTransactions(fromCurrency: string, toCurrency: s
             transaction.currency = toCurrency;
         }
     }
+    saveTransactions();
 }
 
 export async function convertAllWallets(fromCurrency: string, toCurrency: string): Promise<void> {
@@ -104,6 +111,7 @@ export async function convertAllWallets(fromCurrency: string, toCurrency: string
             wallet.currency = toCurrency;
         }
     }
+    saveWallets();
 }
 
 export async function convertAllDebts(fromCurrency: string, toCurrency: string): Promise<void> {
@@ -114,4 +122,5 @@ export async function convertAllDebts(fromCurrency: string, toCurrency: string):
             debt.currency = toCurrency;
         }
     }
+    saveDebts();
 }
